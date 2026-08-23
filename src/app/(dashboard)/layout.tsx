@@ -3,7 +3,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, FolderTree, Package, ShoppingCart, LogOut, Users } from 'lucide-react';
+import { LayoutDashboard, FolderTree, Package, ShoppingCart, Users, LogOut, Menu } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { clearToken } from '@/lib/api-client';
 
 const NAV_ITEMS = [
@@ -18,6 +20,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -35,6 +38,43 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     router.replace('/login');
   };
 
+  const isLinkActive = (href: string) => pathname === href || pathname?.startsWith(`${href}/`);
+
+  // Reutilizado tanto en el sidebar de escritorio como en el drawer móvil,
+  // para no duplicar la lista de enlaces en dos lugares distintos.
+  const renderNavLinks = (onNavigate?: () => void) => (
+    <nav className="mt-4 flex flex-col gap-1 px-3">
+      {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
+        <Link
+          key={href}
+          href={href}
+          onClick={onNavigate}
+          className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+            isLinkActive(href)
+              ? 'bg-indigo-600 text-white'
+              : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+          }`}
+        >
+          <Icon className="h-4 w-4" />
+          {label}
+        </Link>
+      ))}
+    </nav>
+  );
+
+  const renderLogoutButton = () => (
+    <div className="border-t border-slate-800 p-3">
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+      >
+        <LogOut className="h-4 w-4" />
+        Cerrar sesión
+      </button>
+    </div>
+  );
+
   // Evita el "flash" del layout protegido mientras se valida la sesión
   if (checkingAuth) {
     return (
@@ -45,48 +85,51 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50">
-      <aside className="flex w-64 flex-col justify-between border-r border-slate-800 bg-slate-900">
+    <div className="min-h-screen bg-slate-50">
+      {/* Sidebar de escritorio: oculto en móvil, fijo desde md: en adelante */}
+      <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col md:justify-between md:border-r md:border-slate-800 md:bg-slate-900">
         <div>
           <div className="flex h-16 items-center px-6 text-lg font-semibold tracking-tight text-white">
-            Tennis Admin
+            OMS Admin
           </div>
-
-          <nav className="mt-4 flex flex-col gap-1 px-3">
-            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-              const isActive = pathname === href || pathname?.startsWith(`${href}/`);
-
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {label}
-                </Link>
-              );
-            })}
-          </nav>
+          {renderNavLinks()}
         </div>
-
-        <div className="border-t border-slate-800 p-3">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
-          >
-            <LogOut className="h-4 w-4" />
-            Cerrar sesión
-          </button>
-        </div>
+        {renderLogoutButton()}
       </aside>
 
-      <main className="flex-1 overflow-y-auto p-8">{children}</main>
+      {/* Navbar móvil: solo visible por debajo de md: */}
+      <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden">
+        <span className="text-lg font-semibold tracking-tight text-slate-900">Admin Panel</span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsMobileMenuOpen(true)}
+          aria-label="Abrir menú"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+      </header>
+
+      {/* Drawer móvil (Shadcn Sheet): mismo contenido de navegación que el sidebar */}
+      <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+        <SheetContent
+          side="left"
+          className="flex w-64 flex-col justify-between border-slate-800 bg-slate-900 p-0 text-slate-100"
+        >
+          <div>
+            <SheetTitle className="flex h-16 items-center px-6 text-lg font-semibold tracking-tight text-white">
+              OMS Admin
+            </SheetTitle>
+            {renderNavLinks(() => setIsMobileMenuOpen(false))}
+          </div>
+          {renderLogoutButton()}
+        </SheetContent>
+      </Sheet>
+
+      {/* Contenido principal: sin margen en móvil, con margen igual al ancho del sidebar desde md: */}
+      <main className="md:pl-64">
+        <div className="p-4 md:p-8">{children}</div>
+      </main>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { DollarSign, ShoppingCart, Package, Users } from 'lucide-react';
+import { DollarSign, ShoppingCart, Users, Trophy } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,78 +14,39 @@ import {
   type PaginatedResult,
 } from '@/components/orders/types';
 import { getEstadoBadgeClass } from '@/components/orders/estado-badge';
-import type { Product } from '@/components/products/types';
-import type { Customer } from '@/components/orders/types';
-
-interface DashboardMetrics {
-  totalIngresos: number;
-  totalOrdenes: number;
-  productosActivos: number;
-  totalClientes: number;
-}
+import type { DashboardMetrics } from '@/components/dashboard/types';
 
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [recentOrders, setRecentOrders] = useState<OrderSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
 
-    // No existe un endpoint de métricas agregadas en el backend, así que los
-    // indicadores se calculan aquí a partir de los endpoints ya existentes.
-    // "Productos Activos" y "Total de Ventas" son aproximados si el catálogo
-    // supera el límite de la página consultada (100 registros).
-    Promise.all([
-      apiClient.get<PaginatedResult<OrderSummary>>('/orders?limit=100'),
-      apiClient.get<PaginatedResult<Product>>('/products?limit=100'),
-      apiClient.get<Customer[]>('/customers'),
-    ])
-      .then(([ordersRes, productsRes, customers]) => {
-        if (!isMounted) return;
-
-        const totalIngresos = ordersRes.data.reduce((sum, order) => sum + Number(order.total), 0);
-        const productosActivos = productsRes.data.filter((p) => p.estado === 'ACTIVO').length;
-
-        setMetrics({
-          totalIngresos,
-          totalOrdenes: ordersRes.meta.total,
-          productosActivos,
-          totalClientes: customers.length,
-        });
-        setRecentOrders(ordersRes.data.slice(0, 5));
+    apiClient
+      .get<DashboardMetrics>('/dashboard/metrics')
+      .then((data) => {
+        if (isMounted) setMetrics(data);
       })
       .finally(() => {
-        if (isMounted) setIsLoading(false);
+        if (isMounted) setIsLoadingMetrics(false);
+      });
+
+    apiClient
+      .get<PaginatedResult<OrderSummary>>('/orders?limit=5')
+      .then((res) => {
+        if (isMounted) setRecentOrders(res.data);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingOrders(false);
       });
 
     return () => {
       isMounted = false;
     };
   }, []);
-
-  const cards = [
-    {
-      label: 'Total de Ventas (Ingresos)',
-      value: metrics ? formatCurrency(metrics.totalIngresos) : null,
-      icon: DollarSign,
-    },
-    {
-      label: 'Órdenes Totales',
-      value: metrics ? metrics.totalOrdenes.toLocaleString('es-MX') : null,
-      icon: ShoppingCart,
-    },
-    {
-      label: 'Productos Activos',
-      value: metrics ? metrics.productosActivos.toLocaleString('es-MX') : null,
-      icon: Package,
-    },
-    {
-      label: 'Clientes Registrados',
-      value: metrics ? metrics.totalClientes.toLocaleString('es-MX') : null,
-      icon: Users,
-    },
-  ];
 
   return (
     <div className="space-y-8">
@@ -96,29 +57,158 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map(({ label, value, icon: Icon }) => (
-          <Card key={label}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500">{label}</CardTitle>
-              <Icon className="h-4 w-4 text-slate-400" />
-            </CardHeader>
-            <CardContent>
-              {value === null ? (
-                <Skeleton className="h-7 w-24" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* Tarjeta 1: Ventas */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500">
+              Total de Ventas (Ingresos)
+            </CardTitle>
+            <DollarSign className="h-4 w-4 text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            {isLoadingMetrics || !metrics ? (
+              <Skeleton className="h-8 w-28" />
+            ) : (
+              <p className="text-2xl font-bold tracking-tight">
+                {formatCurrency(metrics.ventas.ultimos30Dias)}
+              </p>
+            )}
+            <p className="mt-1 text-xs text-slate-400">Últimos 30 días</p>
+
+            <div className="mt-3 flex items-center gap-4 border-t border-slate-100 pt-3 text-xs">
+              <div>
+                <span className="text-slate-400">Hoy: </span>
+                <span className="font-medium text-slate-600">
+                  {isLoadingMetrics || !metrics ? '—' : formatCurrency(metrics.ventas.hoy)}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-400">Últimos 7 días: </span>
+                <span className="font-medium text-slate-600">
+                  {isLoadingMetrics || !metrics ? '—' : formatCurrency(metrics.ventas.ultimos7Dias)}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tarjeta 2: Órdenes */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500">Órdenes Totales</CardTitle>
+            <ShoppingCart className="h-4 w-4 text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            {isLoadingMetrics || !metrics ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <p className="text-2xl font-bold tracking-tight">
+                {metrics.ordenes.ultimos30Dias.toLocaleString('es-MX')}
+              </p>
+            )}
+            <p className="mt-1 text-xs text-slate-400">Últimos 30 días</p>
+
+            <div className="mt-3 flex items-center gap-4 border-t border-slate-100 pt-3 text-xs">
+              <div>
+                <span className="text-slate-400">Hoy: </span>
+                <span className="font-medium text-slate-600">
+                  {isLoadingMetrics || !metrics ? '—' : metrics.ordenes.hoy.toLocaleString('es-MX')}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-400">Últimos 7 días: </span>
+                <span className="font-medium text-slate-600">
+                  {isLoadingMetrics || !metrics
+                    ? '—'
+                    : metrics.ordenes.ultimos7Dias.toLocaleString('es-MX')}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tarjeta 3: Clientes */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500">
+              Clientes Registrados
+            </CardTitle>
+            <Users className="h-4 w-4 text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            {isLoadingMetrics || !metrics ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <p className="text-2xl font-bold tracking-tight">
+                {metrics.clientes.total.toLocaleString('es-MX')}
+              </p>
+            )}
+            <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-400">
+              {isLoadingMetrics || !metrics ? (
+                '—'
               ) : (
-                <p className="text-2xl font-bold tracking-tight">{value}</p>
+                <>
+                  <span className="font-medium text-green-600">
+                    +{metrics.clientes.nuevosUltimos30Dias}
+                  </span>{' '}
+                  Nuevos (Últimos 30 días)
+                </>
               )}
-            </CardContent>
-          </Card>
-        ))}
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Tarjeta 4: Top 5 Productos */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500">
+              Top 5 Productos Más Vendidos (30 días)
+            </CardTitle>
+            <Trophy className="h-4 w-4 text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            {isLoadingMetrics || !metrics ? (
+              <div className="space-y-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-6 w-full" />
+                ))}
+              </div>
+            ) : metrics.topProductos.length === 0 ? (
+              <p className="text-sm text-slate-500">Sin ventas en este período</p>
+            ) : (
+              <ol className="space-y-2">
+                {metrics.topProductos.map((producto, index) => (
+                  <li
+                    key={producto.productId}
+                    className="flex items-center justify-between gap-2 text-sm"
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="w-6 shrink-0 font-mono text-xs text-slate-400">
+                        #{index + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-slate-700">{producto.nombre}</p>
+                        <p className="truncate text-xs text-slate-400">{producto.marca}</p>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="shrink-0 whitespace-nowrap">
+                      {producto.unidadesVendidas} unidades
+                    </Badge>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
+      {/* Órdenes recientes */}
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold tracking-tight">Últimas 5 Órdenes Recientes</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Últimas Órdenes Recientes</h2>
 
         <div className="rounded-lg border border-slate-200 bg-white">
-          {isLoading ? (
+          {isLoadingOrders ? (
             <div className="space-y-3 p-4">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-10 w-full" />
@@ -129,7 +219,10 @@ export default function DashboardPage() {
           ) : (
             <ul className="divide-y divide-slate-100">
               {recentOrders.map((order) => (
-                <li key={order.id} className="flex items-center justify-between px-4 py-3">
+                <li
+                  key={order.id}
+                  className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                >
                   <div>
                     <p className="font-mono text-sm">{order.numeroOrden}</p>
                     <p className="text-xs text-slate-500">
