@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, FolderTree, Package, ShoppingCart, LogOut } from 'lucide-react';
+import { LayoutDashboard, FolderTree, Package, ShoppingCart, LogOut, Users } from 'lucide-react';
 import { clearToken } from '@/lib/api-client';
 
 const NAV_ITEMS = [
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: '/categories', label: 'Categorías', icon: FolderTree },
   { href: '/products', label: 'Productos', icon: Package },
   { href: '/orders', label: 'Ventas', icon: ShoppingCart },
+  { href: '/customers', label: 'Clientes', icon: Users },
 ] as const;
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -48,7 +49,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <aside className="flex w-64 flex-col justify-between border-r border-slate-800 bg-slate-900">
         <div>
           <div className="flex h-16 items-center px-6 text-lg font-semibold tracking-tight text-white">
-            OMS Admin
+            Tennis Admin
           </div>
 
           <nav className="mt-4 flex flex-col gap-1 px-3">
