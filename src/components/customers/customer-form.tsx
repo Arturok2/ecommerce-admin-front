@@ -69,9 +69,9 @@ export function CustomerForm({ open, onOpenChange, onSuccess }: CustomerFormProp
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90vh] w-[95vw] max-w-md overflow-y-auto md:max-w-3xl lg:max-w-[45vw]">
         <DialogHeader>
-          <DialogTitle>Nuevo cliente</DialogTitle>
+          <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">Nuevo cliente</DialogTitle>
           <DialogDescription>Completa los datos para registrar un nuevo cliente.</DialogDescription>
         </DialogHeader>
 

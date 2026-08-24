@@ -110,10 +110,10 @@ export function OrderDetailsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] w-[95vw] max-w-md overflow-y-auto md:max-w-3xl lg:max-w-[45vw]">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <DialogTitle>Gestionar Orden</DialogTitle>
+            <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">Gestionar Orden</DialogTitle>
             {order && (
               <>
                 <span className="font-mono text-sm text-slate-500">#{order.numeroOrden}</span>

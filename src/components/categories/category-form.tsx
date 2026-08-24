@@ -103,9 +103,9 @@ export function CategoryForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90vh] w-[95vw] max-w-md overflow-y-auto md:max-w-3xl lg:max-w-[45vw]">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? 'Editar categoría' : 'Nueva categoría'}</DialogTitle>
+          <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">{isEditMode ? 'Editar categoría' : 'Nueva categoría'}</DialogTitle>
           <DialogDescription>
             {isEditMode
               ? 'Modifica los datos de la categoría seleccionada.'

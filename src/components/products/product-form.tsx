@@ -179,9 +179,11 @@ export function ProductForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] w-[95vw] max-w-md overflow-y-auto md:max-w-3xl lg:max-w-[45vw]">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? 'Editar producto' : 'Nuevo producto'}</DialogTitle>
+          <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
+            {isEditMode ? 'Editar producto' : 'Nuevo producto'}
+          </DialogTitle>
           <DialogDescription>
             {isEditMode
               ? 'Modifica los datos generales del producto.'
@@ -257,7 +259,12 @@ export function ProductForm({
                   disabled={isSubmitting}
                 >
                   <SelectTrigger id="categoriaId">
-                    <SelectValue placeholder="Selecciona una categoría" />
+                    {/* Se pasa el label explícito (no solo el placeholder) para que
+                        siempre muestre el NOMBRE, incluso si el dropdown nunca se
+                        abrió (ej. al precargar la categoría en modo edición) */}
+                    <SelectValue placeholder="Selecciona una categoría">
+                      {categories.find((c) => c.id === form.categoriaId)?.nombre}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
@@ -304,74 +311,83 @@ export function ProductForm({
                 </Button>
               </div>
 
-              <div className="space-y-3">
-                {variants.map((variant) => (
+              <div>
+                {variants.map((variant, index) => (
                   <div
                     key={variant.key}
-                    className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_auto] items-end gap-2 rounded-md border border-slate-200 p-3"
+                    className="space-y-3 border-b border-slate-200 pb-4 mb-4 last:mb-0 last:border-b-0 last:pb-0"
                   >
-                    <div className="space-y-1">
-                      <Label className="text-xs text-slate-500">SKU</Label>
-                      <Input
-                        value={variant.sku}
-                        onChange={(e) => updateVariantField(variant.key, 'sku', e.target.value)}
-                        disabled={isSubmitting}
-                      />
+                    <p className="text-xs font-medium text-slate-400">Variante #{index + 1}</p>
+
+                    {/* Sub-fila 1: SKU, Precio, Stock */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-slate-500">SKU</Label>
+                        <Input
+                          value={variant.sku}
+                          onChange={(e) => updateVariantField(variant.key, 'sku', e.target.value)}
+                          disabled={isSubmitting}
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-xs text-slate-500">Precio</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={variant.precio}
+                          onChange={(e) => updateVariantField(variant.key, 'precio', e.target.value)}
+                          disabled={isSubmitting}
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-xs text-slate-500">Stock</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={variant.stock}
+                          onChange={(e) => updateVariantField(variant.key, 'stock', e.target.value)}
+                          disabled={isSubmitting}
+                        />
+                      </div>
                     </div>
 
-                    <div className="space-y-1">
-                      <Label className="text-xs text-slate-500">Precio</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={variant.precio}
-                        onChange={(e) => updateVariantField(variant.key, 'precio', e.target.value)}
-                        disabled={isSubmitting}
-                      />
-                    </div>
+                    {/* Sub-fila 2: Color, Talla, Eliminar */}
+                    <div className="grid grid-cols-3 items-end gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-slate-500">Color</Label>
+                        <Input
+                          value={variant.color}
+                          onChange={(e) => updateVariantField(variant.key, 'color', e.target.value)}
+                          placeholder="Blanco"
+                          disabled={isSubmitting}
+                        />
+                      </div>
 
-                    <div className="space-y-1">
-                      <Label className="text-xs text-slate-500">Stock</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={variant.stock}
-                        onChange={(e) => updateVariantField(variant.key, 'stock', e.target.value)}
-                        disabled={isSubmitting}
-                      />
-                    </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-slate-500">Talla</Label>
+                        <Input
+                          value={variant.talla}
+                          onChange={(e) => updateVariantField(variant.key, 'talla', e.target.value)}
+                          placeholder="27"
+                          disabled={isSubmitting}
+                        />
+                      </div>
 
-                    <div className="space-y-1">
-                      <Label className="text-xs text-slate-500">Color</Label>
-                      <Input
-                        value={variant.color}
-                        onChange={(e) => updateVariantField(variant.key, 'color', e.target.value)}
-                        placeholder="Blanco"
-                        disabled={isSubmitting}
-                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => removeVariantRow(variant.key)}
+                        disabled={isSubmitting || variants.length === 1}
+                        title="Quitar variante"
+                        className="justify-center gap-2 text-red-600 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Quitar
+                      </Button>
                     </div>
-
-                    <div className="space-y-1">
-                      <Label className="text-xs text-slate-500">Talla</Label>
-                      <Input
-                        value={variant.talla}
-                        onChange={(e) => updateVariantField(variant.key, 'talla', e.target.value)}
-                        placeholder="27"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeVariantRow(variant.key)}
-                      disabled={isSubmitting || variants.length === 1}
-                      title="Quitar variante"
-                    >
-                      <Trash2 className="h-4 w-4 text-red-600" />
-                    </Button>
                   </div>
                 ))}
               </div>

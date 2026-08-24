@@ -165,9 +165,9 @@ export function CreateOrderForm({ open, onOpenChange, onSuccess }: CreateOrderFo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] w-[95vw] max-w-md overflow-y-auto md:max-w-3xl lg:max-w-[45vw]">
         <DialogHeader>
-          <DialogTitle>Generar Venta Ficticia</DialogTitle>
+          <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">Generar Venta Ficticia</DialogTitle>
           <DialogDescription>
             Simula una venta seleccionando un cliente, dirección y productos del inventario.
           </DialogDescription>
