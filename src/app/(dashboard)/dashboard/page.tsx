@@ -64,7 +64,7 @@ export default function DashboardPage() {
             <CardTitle className="text-sm font-medium text-slate-500">
               Total de Ventas (Ingresos)
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-slate-400" />
+            <DollarSign className="h-5 w-5 text-slate-400" />
           </CardHeader>
           <CardContent>
             {isLoadingMetrics || !metrics ? (
@@ -97,7 +97,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Órdenes Totales</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-slate-400" />
+            <ShoppingCart className="h-5 w-5 text-slate-400" />
           </CardHeader>
           <CardContent>
             {isLoadingMetrics || !metrics ? (
@@ -134,7 +134,7 @@ export default function DashboardPage() {
             <CardTitle className="text-sm font-medium text-slate-500">
               Clientes Registrados
             </CardTitle>
-            <Users className="h-4 w-4 text-slate-400" />
+            <Users className="h-5 w-5 text-slate-400" />
           </CardHeader>
           <CardContent>
             {isLoadingMetrics || !metrics ? (
@@ -165,7 +165,7 @@ export default function DashboardPage() {
             <CardTitle className="text-sm font-medium text-slate-500">
               Top 5 Productos Más Vendidos (30 días)
             </CardTitle>
-            <Trophy className="h-4 w-4 text-slate-400" />
+            <Trophy className="h-5 w-5 text-slate-400" />
           </CardHeader>
           <CardContent>
             {isLoadingMetrics || !metrics ? (
