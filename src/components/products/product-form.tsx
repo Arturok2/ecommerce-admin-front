@@ -259,12 +259,9 @@ export function ProductForm({
                   disabled={isSubmitting}
                 >
                   <SelectTrigger id="categoriaId">
-                    <SelectValue
-                      placeholder={
-                        categories.find((c) => c.id === form.categoriaId)?.nombre ??
-                        'Selecciona una categoría'
-                      }
-                    />
+                    <SelectValue placeholder="Selecciona una categoría">
+                      {categories.find((category) => category.id === form.categoriaId)?.nombre}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (

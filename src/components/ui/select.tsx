@@ -50,9 +50,14 @@ function SelectTrigger({ id, className, children }: React.ComponentProps<"button
   )
 }
 
-function SelectValue({ placeholder }: { placeholder?: string }) {
+function SelectValue({ placeholder, children }: { placeholder?: string; children?: React.ReactNode }) {
   const { value } = useSelectContext()
-  return <span className={cn(!value && "text-muted-foreground")}>{value || placeholder}</span>
+  // Si el padre pasa `children` (ej. el nombre resuelto a partir del id),
+  // eso tiene prioridad sobre el `value` crudo — así los <Select> cuyo
+  // value es un id (categoría, cliente, etc.) pueden mostrar una etiqueta
+  // legible en vez del id mismo.
+  const display = children ?? value
+  return <span className={cn(!display && "text-muted-foreground")}>{display || placeholder}</span>
 }
 
 function SelectContent({ className, children }: React.ComponentProps<"div">) {
