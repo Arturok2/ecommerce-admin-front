@@ -259,12 +259,12 @@ export function ProductForm({
                   disabled={isSubmitting}
                 >
                   <SelectTrigger id="categoriaId">
-                    {/* Se pasa el label explícito (no solo el placeholder) para que
-                        siempre muestre el NOMBRE, incluso si el dropdown nunca se
-                        abrió (ej. al precargar la categoría en modo edición) */}
-                    <SelectValue placeholder="Selecciona una categoría">
-                      {categories.find((c) => c.id === form.categoriaId)?.nombre}
-                    </SelectValue>
+                    <SelectValue
+                      placeholder={
+                        categories.find((c) => c.id === form.categoriaId)?.nombre ??
+                        'Selecciona una categoría'
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
