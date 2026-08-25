@@ -91,10 +91,10 @@ export default function ProductsPage() {
             <img
               src={url}
               alt={row.original.nombre}
-              className="h-10 w-10 rounded-md border border-slate-200 object-cover"
+              className="h-10 w-10 rounded-md border border-border object-cover"
             />
           ) : (
-            <div className="h-10 w-10 rounded-md border border-dashed border-slate-300 bg-slate-50" />
+            <div className="h-10 w-10 rounded-md border border-dashed border-border bg-muted" />
           );
         },
       },
@@ -173,8 +173,8 @@ export default function ProductsPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Productos</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-blue-200">Productos</h1>
+          <p className="mt-1 text-sm text-blue-600/70 dark:text-blue-300/40">
             Administra el catálogo de productos y sus variantes de venta.
           </p>
         </div>

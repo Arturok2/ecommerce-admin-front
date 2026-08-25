@@ -8,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -62,6 +61,10 @@ const EMPTY_BASE_STATE: BaseFormState = {
   categoriaId: '',
   imagenUrl: '',
 };
+
+// Clase compartida para labels de campo: tono sutil armónico con la
+// paleta púrpura pastel, en vez del gris plano heredado (text-slate-500).
+const FIELD_LABEL_CLASS = 'text-xs text-slate-600 dark:text-blue-300/70';
 
 function createEmptyVariantRow(): VariantRow {
   return { key: crypto.randomUUID(), sku: '', precio: '', stock: '', color: '', talla: '' };
@@ -179,219 +182,246 @@ export function ProductForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] w-[95vw] max-w-md overflow-y-auto md:max-w-3xl lg:max-w-[45vw]">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
+      {/* p-0 + flex-col: el padding se delega a header/body/footer para
+          poder darle scroll exclusivo solo al body sin que el modal
+          desborde la pantalla en formularios largos (variantes, historial, etc). */}
+      <DialogContent className="flex max-h-[90vh] w-[95vw] max-w-md flex-col overflow-hidden p-0 md:max-w-3xl lg:max-w-4xl">
+        <DialogHeader className="shrink-0 gap-1 border-b bg-background p-6">
+          <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl dark:text-blue-200">
             {isEditMode ? 'Editar producto' : 'Nuevo producto'}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-slate-600 dark:text-blue-300/70">
             {isEditMode
               ? 'Modifica los datos generales del producto.'
               : 'Completa los datos del producto y sus variantes de venta.'}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Datos del producto base */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="nombre">Nombre</Label>
-              <Input
-                id="nombre"
-                value={form.nombre}
-                onChange={(e) => updateField('nombre', e.target.value)}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="descripcion">Descripción</Label>
-              <Textarea
-                id="descripcion"
-                value={form.descripcion}
-                onChange={(e) => updateField('descripcion', e.target.value)}
-                required
-                disabled={isSubmitting}
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          {/* Modal Body: único bloque con scroll — header y footer quedan fijos */}
+          <div className="flex-1 space-y-6 overflow-y-auto p-6">
+            {/* Datos del producto base */}
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="marca">Marca</Label>
+                <Label htmlFor="nombre" className={FIELD_LABEL_CLASS}>
+                  Nombre
+                </Label>
                 <Input
-                  id="marca"
-                  value={form.marca}
-                  onChange={(e) => updateField('marca', e.target.value)}
+                  id="nombre"
+                  value={form.nombre}
+                  onChange={(e) => updateField('nombre', e.target.value)}
                   required
                   disabled={isSubmitting}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="genero">Género</Label>
-                <Select
-                  value={form.genero}
-                  onValueChange={(value) => updateField('genero', value as Genero)}
+                <Label htmlFor="descripcion" className={FIELD_LABEL_CLASS}>
+                  Descripción
+                </Label>
+                <Textarea
+                  id="descripcion"
+                  value={form.descripcion}
+                  onChange={(e) => updateField('descripcion', e.target.value)}
+                  required
                   disabled={isSubmitting}
-                >
-                  <SelectTrigger id="genero">
-                    <SelectValue placeholder="Selecciona un género" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {GENERO_OPTIONS.map((genero) => (
-                      <SelectItem key={genero} value={genero}>
-                        {genero}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="categoriaId">Categoría</Label>
-                <Select
-                  value={form.categoriaId}
-                  onValueChange={(value) => updateField('categoriaId', value)}
-                  disabled={isSubmitting}
-                >
-                  <SelectTrigger id="categoriaId">
-                    <SelectValue placeholder="Selecciona una categoría">
-                      {categories.find((category) => category.id === form.categoriaId)?.nombre}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.nombre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="imagenUrl">Imagen (URL, opcional)</Label>
-                <Input
-                  id="imagenUrl"
-                  value={form.imagenUrl}
-                  onChange={(e) => updateField('imagenUrl', e.target.value)}
-                  placeholder="https://..."
-                  disabled={isSubmitting}
+                  rows={3}
                 />
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="marca" className={FIELD_LABEL_CLASS}>
+                    Marca
+                  </Label>
+                  <Input
+                    id="marca"
+                    value={form.marca}
+                    onChange={(e) => updateField('marca', e.target.value)}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="genero" className={FIELD_LABEL_CLASS}>
+                    Género
+                  </Label>
+                  <Select
+                    value={form.genero}
+                    onValueChange={(value) => updateField('genero', value as Genero)}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger id="genero">
+                      <SelectValue placeholder="Selecciona un género" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GENERO_OPTIONS.map((genero) => (
+                        <SelectItem key={genero} value={genero}>
+                          {genero}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="categoriaId" className={FIELD_LABEL_CLASS}>
+                    Categoría
+                  </Label>
+                  {/* El <Select> guarda el UUID de la categoría en form.categoriaId
+                      (lo que necesita el backend), pero <SelectValue> recibe como
+                      children el .nombre resuelto — así el trigger siempre muestra
+                      texto legible y nunca el id crudo. Ver src/components/ui/select.tsx. */}
+                  <Select
+                    value={form.categoriaId}
+                    onValueChange={(value) => updateField('categoriaId', value)}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger id="categoriaId">
+                      <SelectValue placeholder="Selecciona una categoría">
+                        {categories.find((category) => category.id === form.categoriaId)?.nombre}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="imagenUrl" className={FIELD_LABEL_CLASS}>
+                    Imagen (URL, opcional)
+                  </Label>
+                  <Input
+                    id="imagenUrl"
+                    value={form.imagenUrl}
+                    onChange={(e) => updateField('imagenUrl', e.target.value)}
+                    placeholder="https://..."
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
             </div>
+
+            {/* Sub-formulario dinámico de variantes — solo en modo creación */}
+            {isEditMode ? (
+              <p className="rounded-md bg-blue-50/50 p-3 text-sm text-slate-600 dark:bg-zinc-900/80 dark:text-blue-300/70">
+                Las variantes (color, talla, stock, precio) se administran por separado y no se
+                modifican desde este formulario de edición.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold text-slate-800 dark:text-blue-200/90">
+                    Variantes del Producto (Tallas y Colores)
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addVariantRow}
+                    disabled={isSubmitting}
+                  >
+                    <Plus className="mr-1 h-4 w-4" />
+                    Agregar Variante
+                  </Button>
+                </div>
+
+                <div>
+                  {variants.map((variant, index) => (
+                    <div
+                      key={variant.key}
+                      className="mb-4 space-y-3 border-b border-border pb-4 last:mb-0 last:border-b-0 last:pb-0"
+                    >
+                      <p className="text-xs font-medium text-slate-500 dark:text-blue-300/50">
+                        Variante #{index + 1}
+                      </p>
+
+                      {/* Sub-fila 1: SKU, Precio, Stock */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="space-y-1">
+                          <Label className={FIELD_LABEL_CLASS}>SKU</Label>
+                          <Input
+                            value={variant.sku}
+                            onChange={(e) => updateVariantField(variant.key, 'sku', e.target.value)}
+                            disabled={isSubmitting}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className={FIELD_LABEL_CLASS}>Precio</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={variant.precio}
+                            onChange={(e) => updateVariantField(variant.key, 'precio', e.target.value)}
+                            disabled={isSubmitting}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className={FIELD_LABEL_CLASS}>Stock</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={variant.stock}
+                            onChange={(e) => updateVariantField(variant.key, 'stock', e.target.value)}
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Sub-fila 2: Color, Talla, Eliminar */}
+                      <div className="grid grid-cols-3 items-end gap-2">
+                        <div className="space-y-1">
+                          <Label className={FIELD_LABEL_CLASS}>Color</Label>
+                          <Input
+                            value={variant.color}
+                            onChange={(e) => updateVariantField(variant.key, 'color', e.target.value)}
+                            placeholder="Blanco"
+                            disabled={isSubmitting}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className={FIELD_LABEL_CLASS}>Talla</Label>
+                          <Input
+                            value={variant.talla}
+                            onChange={(e) => updateVariantField(variant.key, 'talla', e.target.value)}
+                            placeholder="27"
+                            disabled={isSubmitting}
+                          />
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => removeVariantRow(variant.key)}
+                          disabled={isSubmitting || variants.length === 1}
+                          title="Quitar variante"
+                          className="justify-center gap-2 text-red-600 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Quitar
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Sub-formulario dinámico de variantes — solo en modo creación */}
-          {isEditMode ? (
-            <p className="rounded-md bg-slate-50 p-3 text-sm text-slate-500">
-              Las variantes (color, talla, stock, precio) se administran por separado y no se
-              modifican desde este formulario de edición.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-base">Variantes del Producto (Tallas y Colores)</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addVariantRow}
-                  disabled={isSubmitting}
-                >
-                  <Plus className="mr-1 h-4 w-4" />
-                  Agregar Variante
-                </Button>
-              </div>
-
-              <div>
-                {variants.map((variant, index) => (
-                  <div
-                    key={variant.key}
-                    className="space-y-3 border-b border-slate-200 pb-4 mb-4 last:mb-0 last:border-b-0 last:pb-0"
-                  >
-                    <p className="text-xs font-medium text-slate-400">Variante #{index + 1}</p>
-
-                    {/* Sub-fila 1: SKU, Precio, Stock */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-slate-500">SKU</Label>
-                        <Input
-                          value={variant.sku}
-                          onChange={(e) => updateVariantField(variant.key, 'sku', e.target.value)}
-                          disabled={isSubmitting}
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label className="text-xs text-slate-500">Precio</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          value={variant.precio}
-                          onChange={(e) => updateVariantField(variant.key, 'precio', e.target.value)}
-                          disabled={isSubmitting}
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label className="text-xs text-slate-500">Stock</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={variant.stock}
-                          onChange={(e) => updateVariantField(variant.key, 'stock', e.target.value)}
-                          disabled={isSubmitting}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Sub-fila 2: Color, Talla, Eliminar */}
-                    <div className="grid grid-cols-3 items-end gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-slate-500">Color</Label>
-                        <Input
-                          value={variant.color}
-                          onChange={(e) => updateVariantField(variant.key, 'color', e.target.value)}
-                          placeholder="Blanco"
-                          disabled={isSubmitting}
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label className="text-xs text-slate-500">Talla</Label>
-                        <Input
-                          value={variant.talla}
-                          onChange={(e) => updateVariantField(variant.key, 'talla', e.target.value)}
-                          placeholder="27"
-                          disabled={isSubmitting}
-                        />
-                      </div>
-
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => removeVariantRow(variant.key)}
-                        disabled={isSubmitting || variants.length === 1}
-                        title="Quitar variante"
-                        className="justify-center gap-2 text-red-600 hover:bg-red-50 hover:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Quitar
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
+          {/* Modal Footer: fijo, fuera del área con scroll */}
+          <div className="flex shrink-0 justify-end gap-2 border-t bg-slate-50/50 p-6 dark:bg-zinc-900/30">
             <Button
               type="button"
               variant="outline"
@@ -403,7 +433,7 @@ export function ProductForm({
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Guardando...' : 'Guardar'}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

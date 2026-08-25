@@ -47,7 +47,7 @@ export default function CustomersPage() {
         id: 'iniciales',
         header: '',
         cell: ({ row }) => (
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700 dark:bg-blue-400/10 dark:text-blue-300">
             {getInitials(row.original.nombre)}
           </div>
         ),
@@ -73,8 +73,8 @@ export default function CustomersPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Clientes</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-blue-200">Clientes</h1>
+          <p className="mt-1 text-sm text-blue-600/70 dark:text-blue-300/40">
             Consulta y registra los clientes asociados a las ventas.
           </p>
         </div>

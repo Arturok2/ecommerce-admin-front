@@ -58,13 +58,16 @@ export function DataTable<TData, TValue>({
         />
       </div>
 
-      <div className="rounded-lg border border-slate-200 bg-white">
+      <div className="rounded-lg border border-border bg-card">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-blue-50/50 dark:bg-zinc-900/80">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="hover:bg-transparent">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead
+                    key={header.id}
+                    className="text-blue-700/80 font-semibold dark:text-blue-300/80"
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(header.column.columnDef.header, header.getContext())}
@@ -99,7 +102,7 @@ export function DataTable<TData, TValue>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-28 text-center text-sm text-slate-500"
+                  className="h-28 text-center text-sm text-muted-foreground"
                 >
                   {emptyMessage}
                 </TableCell>

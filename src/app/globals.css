@@ -54,26 +54,26 @@
    "premium" a paneles estilo Vercel/Stripe sin usar sombras pesadas. */
 :root {
   --background: oklch(0.985 0 0);
-  --foreground: oklch(0.21 0.006 285.885);
+  --foreground: oklch(0.21 0.006 258);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.006 285.885);
+  --card-foreground: oklch(0.21 0.006 258);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.006 285.885);
+  --popover-foreground: oklch(0.21 0.006 258);
   /* Primario monocromático (casi negro) en vez de un color vivo:
      es la firma visual de Vercel — los botones "destacan" por contraste
      tonal, no por saturación. */
-  --primary: oklch(0.21 0.006 285.885);
+  --primary: oklch(0.21 0.006 258);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
+  --secondary: oklch(0.967 0.001 258);
+  --secondary-foreground: oklch(0.21 0.006 258);
+  --muted: oklch(0.967 0.001 258);
+  --muted-foreground: oklch(0.552 0.016 258);
+  --accent: oklch(0.967 0.001 258);
+  --accent-foreground: oklch(0.21 0.006 258);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.705 0.015 286.067);
+  --border: oklch(0.92 0.004 258);
+  --input: oklch(0.92 0.004 258);
+  --ring: oklch(0.705 0.015 258);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -81,15 +81,15 @@
   --chart-5: oklch(0.269 0 0);
   --radius: 0.5rem;
   --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.21 0.006 285.885);
-  /* Acento índigo consistente entre claro/oscuro: es el único color "vivo"
+  --sidebar-foreground: oklch(0.21 0.006 258);
+  /* Acento azul consistente entre claro/oscuro: es el único color "vivo"
      del sistema, reservado para el estado activo de navegación. */
-  --sidebar-primary: oklch(0.511 0.262 276.966);
+  --sidebar-primary: oklch(0.511 0.22 258);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.705 0.015 286.067);
+  --sidebar-accent: oklch(0.967 0.001 258);
+  --sidebar-accent-foreground: oklch(0.21 0.006 258);
+  --sidebar-border: oklch(0.92 0.004 258);
+  --sidebar-ring: oklch(0.705 0.015 258);
 }
 
 /* ================= MODO OSCURO ================= */
@@ -97,37 +97,44 @@
    los bordes con opacidad se sienten "elegantes" porque se funden con
    cualquier fondo que tengan detrás, en vez de recortar duro. */
 .dark {
-  --background: oklch(0.141 0.005 285.823); /* ≈ #09090b */
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.985 0 0);
+  --background: oklch(0.141 0.005 258); /* ≈ #09090b con tinte azul */
+  /* Antes oklch(0.985 0 0) (blanco puro, chroma 0): ahora comparte el
+     mismo hue 258 (azul) que --background/--sidebar-primary, con
+     luminosidad alta pero no total y un pelín de chroma — celeste
+     pastel, no blanco. */
+  --foreground: oklch(0.94 0.02 258);
+  --card: oklch(0.21 0.006 258);
+  --card-foreground: oklch(0.94 0.02 258);
+  --popover: oklch(0.21 0.006 258);
+  --popover-foreground: oklch(0.94 0.02 258);
   --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.21 0.006 285.885);
-  --secondary: oklch(0.274 0.006 286.033);
+  --primary-foreground: oklch(0.21 0.006 258);
+  --secondary: oklch(0.274 0.006 258);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
+  --muted: oklch(0.274 0.006 258);
+  --muted-foreground: oklch(0.705 0.015 258);
+  --accent: oklch(0.274 0.006 258);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.442 0.017 285.786);
+  /* Antes oklch(1 0 0 / 8%) (blanco translúcido): un borde azul oscuro
+     sólido, mismo hue que el resto del sistema, en vez de un gris/blanco
+     desconectado de la paleta. */
+  --border: oklch(0.32 0.035 258 / 60%);
+  --input: oklch(0.32 0.035 258 / 70%);
+  --ring: oklch(0.6 0.09 258);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.141 0.005 285.823);
+  --sidebar: oklch(0.141 0.005 258);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.511 0.262 276.966);
+  --sidebar-primary: oklch(0.511 0.22 258);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
+  --sidebar-accent: oklch(0.274 0.006 258);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.442 0.017 285.786);
+  --sidebar-ring: oklch(0.442 0.017 258);
 }
 
 @layer base {

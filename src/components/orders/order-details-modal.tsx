@@ -37,6 +37,13 @@ interface OrderDetailsModalProps {
   onStatusUpdated: () => void; // Refresca la tabla principal de fondo
 }
 
+// Sub-título de cada bloque de la orden (Cliente y Envío, Pago e Ítems, etc.):
+// mismo peso visual en toda la ficha, tono lavanda pastel en modo oscuro.
+const SECTION_TITLE_CLASS = 'text-sm font-semibold text-slate-800 dark:text-blue-200/90';
+// Pares dt/dd de datos: la etiqueta un poco más apagada que el valor.
+const DT_CLASS = 'inline font-medium text-slate-500 dark:text-blue-300/50';
+const DD_CLASS = 'inline text-slate-700 dark:text-blue-100/90';
+
 export function OrderDetailsModal({
   orderId,
   open,
@@ -110,159 +117,177 @@ export function OrderDetailsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] w-[95vw] max-w-md overflow-y-auto md:max-w-3xl lg:max-w-[45vw]">
-        <DialogHeader>
+      {/* p-0 + flex-col: header y footer fijos, el body es el único
+          scrolleable — evita que órdenes con historial largo desborden
+          la pantalla. */}
+      <DialogContent className="flex max-h-[90vh] w-[95vw] max-w-md flex-col overflow-hidden p-0 md:max-w-3xl lg:max-w-4xl">
+        <DialogHeader className="shrink-0 gap-1 border-b bg-background p-6">
           <div className="flex items-center gap-3">
-            <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">Gestionar Orden</DialogTitle>
+            <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl dark:text-blue-200">
+              Gestionar Orden
+            </DialogTitle>
             {order && (
               <>
-                <span className="font-mono text-sm text-slate-500">#{order.numeroOrden}</span>
+                <span className="font-mono text-sm text-slate-500 dark:text-blue-300/60">
+                  #{order.numeroOrden}
+                </span>
                 <Badge variant="outline" className={getEstadoBadgeClass(order.estadoOrden)}>
                   {order.estadoOrden}
                 </Badge>
               </>
             )}
           </div>
-          <DialogDescription>
+          <DialogDescription className="text-slate-600 dark:text-blue-300/70">
             Detalle completo de la venta, historial de cambios y actualización de estado.
           </DialogDescription>
         </DialogHeader>
 
-        {isLoading || !order ? (
-          <div className="space-y-3 py-4">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-40 w-full" />
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {/* Grid de 2 columnas: Cliente/Envío | Pago/Items */}
-            <div className="grid grid-cols-2 gap-6">
-              <section className="space-y-3 rounded-lg border border-slate-200 p-4">
-                <h3 className="text-sm font-semibold text-slate-900">Cliente y Envío</h3>
-                <dl className="space-y-1 text-sm text-slate-600">
-                  <div>
-                    <dt className="inline font-medium text-slate-500">Nombre: </dt>
-                    <dd className="inline">{order.cliente.nombre}</dd>
-                  </div>
-                  <div>
-                    <dt className="inline font-medium text-slate-500">Email: </dt>
-                    <dd className="inline">{order.cliente.email}</dd>
-                  </div>
-                  <div>
-                    <dt className="inline font-medium text-slate-500">Teléfono: </dt>
-                    <dd className="inline">{order.cliente.telefono}</dd>
-                  </div>
-                </dl>
-
-                {order.direccionEnvio && (
-                  <div className="border-t border-slate-100 pt-3 text-sm text-slate-600">
-                    <p>
-                      {order.direccionEnvio.calle} {order.direccionEnvio.numeroExt}
-                      {order.direccionEnvio.numeroInt ? ` Int. ${order.direccionEnvio.numeroInt}` : ''}
-                    </p>
-                    <p>{order.direccionEnvio.colonia}</p>
-                    <p>
-                      {order.direccionEnvio.ciudad}, {order.direccionEnvio.estadoMx} —{' '}
-                      {order.direccionEnvio.codigoPostal}
-                    </p>
-                  </div>
-                )}
-              </section>
-
-              <section className="space-y-3 rounded-lg border border-slate-200 p-4">
-                <h3 className="text-sm font-semibold text-slate-900">Pago e Ítems</h3>
-                <dl className="space-y-1 text-sm text-slate-600">
-                  <div>
-                    <dt className="inline font-medium text-slate-500">Método de pago: </dt>
-                    <dd className="inline">{order.metodoPago}</dd>
-                  </div>
-                  <div>
-                    <dt className="inline font-medium text-slate-500">Estado de pago: </dt>
-                    <dd className="inline">{order.estadoPago}</dd>
-                  </div>
-                </dl>
-
-                <div className="space-y-1.5 border-t border-slate-100 pt-3">
-                  {order.items.map((item) => (
-                    <div key={item.id} className="flex justify-between text-sm">
-                      <span className="text-slate-600">
-                        {item.variante.producto.nombre}{' '}
-                        <span className="text-slate-400">
-                          ({item.variante.atributos.map((a) => a.valor).join(' / ')})
-                        </span>{' '}
-                        × {item.cantidad}
-                      </span>
-                      <span className="font-medium">{formatCurrency(item.precioUnitario)}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex justify-between border-t border-slate-200 pt-2 text-base font-bold">
-                  <span>Total</span>
-                  <span>{formatCurrency(order.total)}</span>
-                </div>
-              </section>
+        {/* Modal Body: único bloque con scroll vertical */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {isLoading || !order ? (
+            <div className="space-y-3">
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-40 w-full" />
             </div>
-
-            {/* Timeline / Historial de modificaciones */}
-            <section className="space-y-3">
-              <h3 className="text-sm font-semibold text-slate-900">Historial de Modificaciones</h3>
-
-              <ol className="space-y-4 border-l-2 border-slate-200 pl-4">
-                {order.historial.map((entry) => (
-                  <li key={entry.id} className="relative">
-                    <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-indigo-600" />
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={getEstadoBadgeClass(entry.estado)}>
-                        {entry.estado}
-                      </Badge>
-                      <span className="text-xs text-slate-400">{formatDateTime(entry.createdAt)}</span>
+          ) : (
+            <div className="space-y-8">
+              {/* Grid de 2 columnas: Cliente/Envío | Pago/Items */}
+              <div className="grid grid-cols-2 gap-6">
+                <section className="space-y-3 rounded-lg border border-border p-4">
+                  <h3 className={SECTION_TITLE_CLASS}>Cliente y Envío</h3>
+                  <dl className="space-y-1 text-sm">
+                    <div>
+                      <dt className={DT_CLASS}>Nombre: </dt>
+                      <dd className={DD_CLASS}>{order.cliente.nombre}</dd>
                     </div>
-                    {entry.nota && <p className="mt-1 text-sm text-slate-600">{entry.nota}</p>}
-                    <p className="mt-0.5 text-xs text-slate-400">Por: {entry.admin.email}</p>
-                  </li>
-                ))}
-              </ol>
-            </section>
+                    <div>
+                      <dt className={DT_CLASS}>Email: </dt>
+                      <dd className={DD_CLASS}>{order.cliente.email}</dd>
+                    </div>
+                    <div>
+                      <dt className={DT_CLASS}>Teléfono: </dt>
+                      <dd className={DD_CLASS}>{order.cliente.telefono}</dd>
+                    </div>
+                  </dl>
 
-            {/* Formulario de cambio de estado */}
-            <section className="space-y-3 rounded-lg border border-slate-200 p-4">
-              <h3 className="text-sm font-semibold text-slate-900">Actualizar Estado</h3>
+                  {order.direccionEnvio && (
+                    <div className="border-t border-border pt-3 text-sm text-slate-600 dark:text-blue-100/80">
+                      <p>
+                        {order.direccionEnvio.calle} {order.direccionEnvio.numeroExt}
+                        {order.direccionEnvio.numeroInt ? ` Int. ${order.direccionEnvio.numeroInt}` : ''}
+                      </p>
+                      <p>{order.direccionEnvio.colonia}</p>
+                      <p>
+                        {order.direccionEnvio.ciudad}, {order.direccionEnvio.estadoMx} —{' '}
+                        {order.direccionEnvio.codigoPostal}
+                      </p>
+                    </div>
+                  )}
+                </section>
 
-              <div className="grid grid-cols-2 gap-3">
-                <Select
-                  value={nuevoEstado}
-                  onValueChange={(value) => setNuevoEstado(value as EstadoOrden)}
-                  disabled={isUpdating}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona el nuevo estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ESTADO_ORDEN_OPTIONS.map((estado) => (
-                      <SelectItem key={estado} value={estado}>
-                        {estado}
-                      </SelectItem>
+                <section className="space-y-3 rounded-lg border border-border p-4">
+                  <h3 className={SECTION_TITLE_CLASS}>Pago e Ítems</h3>
+                  <dl className="space-y-1 text-sm">
+                    <div>
+                      <dt className={DT_CLASS}>Método de pago: </dt>
+                      <dd className={DD_CLASS}>{order.metodoPago}</dd>
+                    </div>
+                    <div>
+                      <dt className={DT_CLASS}>Estado de pago: </dt>
+                      <dd className={DD_CLASS}>{order.estadoPago}</dd>
+                    </div>
+                  </dl>
+
+                  <div className="space-y-1.5 border-t border-border pt-3">
+                    {order.items.map((item) => (
+                      <div key={item.id} className="flex justify-between text-sm">
+                        <span className="text-slate-600 dark:text-blue-100/80">
+                          {item.variante.producto.nombre}{' '}
+                          <span className="text-slate-400 dark:text-blue-300/40">
+                            ({item.variante.atributos.map((a) => a.valor).join(' / ')})
+                          </span>{' '}
+                          × {item.cantidad}
+                        </span>
+                        <span className="font-medium text-slate-900 dark:text-blue-100">
+                          {formatCurrency(item.precioUnitario)}
+                        </span>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </div>
 
-                <Button onClick={handleUpdateStatus} disabled={isUpdating}>
-                  {isUpdating ? 'Actualizando...' : 'Actualizar Estado'}
-                </Button>
+                  <div className="flex justify-between border-t border-border pt-2 text-base font-bold text-slate-900 dark:text-blue-100">
+                    <span>Total</span>
+                    <span>{formatCurrency(order.total)}</span>
+                  </div>
+                </section>
               </div>
 
-              <Textarea
-                placeholder="Nota (opcional)"
-                value={nota}
-                onChange={(e) => setNota(e.target.value)}
-                disabled={isUpdating}
-                rows={2}
-              />
-            </section>
-          </div>
-        )}
+              {/* Timeline / Historial de modificaciones */}
+              <section className="space-y-3">
+                <h3 className={SECTION_TITLE_CLASS}>Historial de Modificaciones</h3>
+
+                <ol className="space-y-4 border-l-2 border-border pl-4">
+                  {order.historial.map((entry) => (
+                    <li key={entry.id} className="relative">
+                      <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-blue-500 dark:bg-blue-400" />
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className={getEstadoBadgeClass(entry.estado)}>
+                          {entry.estado}
+                        </Badge>
+                        <span className="text-xs text-slate-400 dark:text-blue-300/40">
+                          {formatDateTime(entry.createdAt)}
+                        </span>
+                      </div>
+                      {entry.nota && (
+                        <p className="mt-1 text-sm text-slate-600 dark:text-blue-100/80">{entry.nota}</p>
+                      )}
+                      <p className="mt-0.5 text-xs text-slate-400 dark:text-blue-300/40">
+                        Por: {entry.admin.email}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+
+              {/* Formulario de cambio de estado */}
+              <section className="space-y-3 rounded-lg border border-border p-4">
+                <h3 className={SECTION_TITLE_CLASS}>Actualizar Estado</h3>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Select
+                    value={nuevoEstado}
+                    onValueChange={(value) => setNuevoEstado(value as EstadoOrden)}
+                    disabled={isUpdating}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona el nuevo estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ESTADO_ORDEN_OPTIONS.map((estado) => (
+                        <SelectItem key={estado} value={estado}>
+                          {estado}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Button onClick={handleUpdateStatus} disabled={isUpdating}>
+                    {isUpdating ? 'Actualizando...' : 'Actualizar Estado'}
+                  </Button>
+                </div>
+
+                <Textarea
+                  placeholder="Nota (opcional)"
+                  value={nota}
+                  onChange={(e) => setNota(e.target.value)}
+                  disabled={isUpdating}
+                  rows={2}
+                />
+              </section>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

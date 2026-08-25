@@ -7,7 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,6 +39,9 @@ interface FormState {
 }
 
 const EMPTY_STATE: FormState = { nombre: '', posicion: '0', parentId: NO_PARENT_VALUE };
+
+// Tono sutil armónico para labels, consistente con el resto del sistema.
+const FIELD_LABEL_CLASS = 'text-xs text-slate-600 dark:text-blue-300/70';
 
 export function CategoryForm({
   open,
@@ -103,67 +105,83 @@ export function CategoryForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] w-[95vw] max-w-md overflow-y-auto md:max-w-3xl lg:max-w-[45vw]">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">{isEditMode ? 'Editar categoría' : 'Nueva categoría'}</DialogTitle>
-          <DialogDescription>
+      {/* Formulario corto: mismo patrón de 3 bloques que el resto de los
+          modales por consistencia, aunque en la práctica el body no llegue
+          a necesitar scroll. */}
+      <DialogContent className="flex max-h-[90vh] w-[95vw] max-w-md flex-col overflow-hidden p-0 md:max-w-lg">
+        <DialogHeader className="shrink-0 gap-1 border-b bg-background p-6">
+          <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl dark:text-blue-200">
+            {isEditMode ? 'Editar categoría' : 'Nueva categoría'}
+          </DialogTitle>
+          <DialogDescription className="text-slate-600 dark:text-blue-300/70">
             {isEditMode
               ? 'Modifica los datos de la categoría seleccionada.'
               : 'Completa los datos para crear una nueva categoría.'}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="nombre">Nombre</Label>
-            <Input
-              id="nombre"
-              value={form.nombre}
-              onChange={(e) => setForm((prev) => ({ ...prev, nombre: e.target.value }))}
-              required
-              disabled={isSubmitting}
-            />
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="flex-1 space-y-4 overflow-y-auto p-6">
+            <div className="space-y-2">
+              <Label htmlFor="nombre" className={FIELD_LABEL_CLASS}>
+                Nombre
+              </Label>
+              <Input
+                id="nombre"
+                value={form.nombre}
+                onChange={(e) => setForm((prev) => ({ ...prev, nombre: e.target.value }))}
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="posicion" className={FIELD_LABEL_CLASS}>
+                Posición
+              </Label>
+              <Input
+                id="posicion"
+                type="number"
+                min={0}
+                value={form.posicion}
+                onChange={(e) => setForm((prev) => ({ ...prev, posicion: e.target.value }))}
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="parentId" className={FIELD_LABEL_CLASS}>
+                Categoría padre (opcional)
+              </Label>
+              {/* Ya resuelto correctamente en el original: value guarda el id,
+                  SelectValue muestra el .nombre (o el texto fijo "Sin
+                  categoría padre") en vez del UUID crudo. */}
+              <Select
+                value={form.parentId}
+                onValueChange={(value) => setForm((prev) => ({ ...prev, parentId: value }))}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger id="parentId">
+                  <SelectValue placeholder="Sin categoría padre">
+                    {form.parentId === NO_PARENT_VALUE
+                      ? 'Sin categoría padre'
+                      : parentOptions.find((category) => category.id === form.parentId)?.nombre}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_PARENT_VALUE}>Sin categoría padre</SelectItem>
+                  {parentOptions.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="posicion">Posición</Label>
-            <Input
-              id="posicion"
-              type="number"
-              min={0}
-              value={form.posicion}
-              onChange={(e) => setForm((prev) => ({ ...prev, posicion: e.target.value }))}
-              required
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="parentId">Categoría padre (opcional)</Label>
-            <Select
-              value={form.parentId}
-              onValueChange={(value) => setForm((prev) => ({ ...prev, parentId: value }))}
-              disabled={isSubmitting}
-            >
-              <SelectTrigger id="parentId">
-                <SelectValue placeholder="Sin categoría padre">
-                  {form.parentId === NO_PARENT_VALUE
-                    ? 'Sin categoría padre'
-                    : parentOptions.find((category) => category.id === form.parentId)?.nombre}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_PARENT_VALUE}>Sin categoría padre</SelectItem>
-                {parentOptions.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <DialogFooter>
+          <div className="flex shrink-0 justify-end gap-2 border-t bg-slate-50/50 p-6 dark:bg-zinc-900/30">
             <Button
               type="button"
               variant="outline"
@@ -175,7 +193,7 @@ export function CategoryForm({
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Guardando...' : 'Guardar'}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

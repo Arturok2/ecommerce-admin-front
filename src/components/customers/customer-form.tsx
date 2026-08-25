@@ -7,7 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +27,9 @@ interface FormState {
 }
 
 const EMPTY_STATE: FormState = { nombre: '', email: '', telefono: '' };
+
+// Tono sutil armónico para labels, consistente con el resto del sistema.
+const FIELD_LABEL_CLASS = 'text-xs text-slate-600 dark:text-blue-300/70';
 
 export function CustomerForm({ open, onOpenChange, onSuccess }: CustomerFormProps) {
   const { toast } = useToast();
@@ -69,49 +71,64 @@ export function CustomerForm({ open, onOpenChange, onSuccess }: CustomerFormProp
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] w-[95vw] max-w-md overflow-y-auto md:max-w-3xl lg:max-w-[45vw]">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">Nuevo cliente</DialogTitle>
-          <DialogDescription>Completa los datos para registrar un nuevo cliente.</DialogDescription>
+      {/* Formulario corto: el body no necesita scroll en la práctica, pero
+          mantiene el mismo patrón de 3 bloques que el resto de los modales
+          por consistencia del sistema de diseño. */}
+      <DialogContent className="flex max-h-[90vh] w-[95vw] max-w-md flex-col overflow-hidden p-0 md:max-w-lg">
+        <DialogHeader className="shrink-0 gap-1 border-b bg-background p-6">
+          <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl dark:text-blue-200">
+            Nuevo cliente
+          </DialogTitle>
+          <DialogDescription className="text-slate-600 dark:text-blue-300/70">
+            Completa los datos para registrar un nuevo cliente.
+          </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="nombre">Nombre Completo</Label>
-            <Input
-              id="nombre"
-              value={form.nombre}
-              onChange={(e) => updateField('nombre', e.target.value)}
-              required
-              disabled={isLoading}
-            />
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="flex-1 space-y-4 overflow-y-auto p-6">
+            <div className="space-y-2">
+              <Label htmlFor="nombre" className={FIELD_LABEL_CLASS}>
+                Nombre Completo
+              </Label>
+              <Input
+                id="nombre"
+                value={form.nombre}
+                onChange={(e) => updateField('nombre', e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email" className={FIELD_LABEL_CLASS}>
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={form.email}
+                onChange={(e) => updateField('email', e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="telefono" className={FIELD_LABEL_CLASS}>
+                Teléfono
+              </Label>
+              <Input
+                id="telefono"
+                type="tel"
+                value={form.telefono}
+                onChange={(e) => updateField('telefono', e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={form.email}
-              onChange={(e) => updateField('email', e.target.value)}
-              required
-              disabled={isLoading}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="telefono">Teléfono</Label>
-            <Input
-              id="telefono"
-              type="tel"
-              value={form.telefono}
-              onChange={(e) => updateField('telefono', e.target.value)}
-              required
-              disabled={isLoading}
-            />
-          </div>
-
-          <DialogFooter>
+          <div className="flex shrink-0 justify-end gap-2 border-t bg-slate-50/50 p-6 dark:bg-zinc-900/30">
             <Button
               type="button"
               variant="outline"
@@ -123,7 +140,7 @@ export function CustomerForm({ open, onOpenChange, onSuccess }: CustomerFormProp
             <Button type="submit" disabled={isLoading}>
               {isLoading ? 'Guardando...' : 'Guardar'}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

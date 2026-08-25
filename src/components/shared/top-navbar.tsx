@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { Bell, Menu, Moon, Search, Settings, Sun, LogOut } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Bell, ChevronRight, Menu, Moon, Settings, Sun, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -41,8 +40,27 @@ function getAdminEmailFromToken(): string | null {
   }
 }
 
+/**
+ * Mapa de rutas del dashboard a su label de navegación (debe reflejar
+ * los mismos textos que NAV_ITEMS en el layout del dashboard) para
+ * construir el breadcrumb "Empresa / <módulo>" del navbar.
+ */
+const BREADCRUMB_LABELS: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/categories': 'Categorías',
+  '/products': 'Productos',
+  '/orders': 'Ventas',
+  '/customers': 'Clientes',
+};
+
+function getBreadcrumbLabel(pathname: string): string | null {
+  const match = Object.keys(BREADCRUMB_LABELS).find((path) => pathname.startsWith(path));
+  return match ? BREADCRUMB_LABELS[match] : null;
+}
+
 export function TopNavbar({ onMobileMenuClick }: TopNavbarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { theme, setTheme } = useTheme();
 
   // Evita el mismatch de hidratación: el tema real solo se conoce en cliente
@@ -56,6 +74,7 @@ export function TopNavbar({ onMobileMenuClick }: TopNavbarProps) {
 
   const initial = adminEmail?.[0]?.toUpperCase() ?? 'A';
   const isDark = mounted && theme === 'dark';
+  const breadcrumbLabel = getBreadcrumbLabel(pathname);
 
   const handleLogout = () => {
     clearToken();
@@ -76,16 +95,22 @@ export function TopNavbar({ onMobileMenuClick }: TopNavbarProps) {
           <Menu className="h-5 w-5" />
         </Button>
 
-        <span className="text-base font-semibold tracking-tight md:hidden">OMS Admin</span>
+        {/* Marca + breadcrumb dinámico. En móvil solo se muestra la marca
+            para no competir por espacio con las acciones de la derecha. */}
+        <div className="flex min-w-0 items-center gap-2">
+          {/* Placeholder de logo — reemplazar por <Image src="/logo.svg" alt="" width={24} height={24} /> cuando exista el asset */}
+          <span className="shrink-0 text-base font-bold tracking-tight md:text-lg">
+            Tennis Star <span className="font-semibold text-muted-foreground">Admin</span>
+          </span>
 
-        {/* Buscador global — se oculta en móvil para no competir por espacio */}
-        <div className="relative hidden max-w-sm flex-1 md:block">
-          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Buscar en el panel..."
-            className="h-9 border-none bg-muted/50 pl-9 shadow-none focus-visible:ring-1"
-          />
+          {breadcrumbLabel && (
+            <div className="hidden min-w-0 items-center gap-2 md:flex">
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+              <span className="truncate text-sm text-muted-foreground">
+                Empresa / <span className="text-foreground/80">{breadcrumbLabel}</span>
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="ml-auto flex items-center gap-1.5">

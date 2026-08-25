@@ -135,8 +135,8 @@ export default function CategoriesPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Categorías</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-blue-200">Categorías</h1>
+          <p className="mt-1 text-sm text-blue-600/70 dark:text-blue-300/40">
             Organiza el catálogo en categorías y subcategorías.
           </p>
         </div>

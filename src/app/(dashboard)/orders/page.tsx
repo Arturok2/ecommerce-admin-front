@@ -62,7 +62,7 @@ export default function OrdersPage() {
         cell: ({ row }) => (
           <div>
             <p className="font-medium">{row.original.cliente.nombre}</p>
-            <p className="text-xs text-slate-500">{row.original.cliente.email}</p>
+            <p className="text-xs text-muted-foreground">{row.original.cliente.email}</p>
           </div>
         ),
       },
@@ -104,8 +104,8 @@ export default function OrdersPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Órdenes / Ventas</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-blue-200">Órdenes / Ventas</h1>
+          <p className="mt-1 text-sm text-blue-600/70 dark:text-blue-300/40">
             Consulta, filtra y da seguimiento a las ventas registradas.
           </p>
         </div>
