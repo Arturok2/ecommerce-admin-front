@@ -146,7 +146,11 @@ export function CategoryForm({
               disabled={isSubmitting}
             >
               <SelectTrigger id="parentId">
-                <SelectValue placeholder="Sin categoría padre" />
+                <SelectValue placeholder="Sin categoría padre">
+                  {form.parentId === NO_PARENT_VALUE
+                    ? 'Sin categoría padre'
+                    : parentOptions.find((category) => category.id === form.parentId)?.nombre}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={NO_PARENT_VALUE}>Sin categoría padre</SelectItem>
