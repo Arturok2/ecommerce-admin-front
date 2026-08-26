@@ -110,7 +110,7 @@ export default function DashboardPage() {
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-blue-200">Dashboard</h1>
         <p className="mt-1 text-sm text-blue-600/70 dark:text-blue-300/40">
-          Resumen general de la operación del e-commerce.
+          Estadísticas recientes de la operación.
         </p>
       </div>
 
@@ -237,7 +237,7 @@ export default function DashboardPage() {
       {/* Órdenes recientes */}
       <section className="space-y-3">
         <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-blue-100">
-          Últimas Órdenes Recientes
+          Órdenes Recientes
         </h2>
 
         <div className="rounded-lg border border-border bg-card">

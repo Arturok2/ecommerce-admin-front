@@ -293,7 +293,7 @@ export function CreateOrderForm({ open, onOpenChange, onSuccess }: CreateOrderFo
                   return (
                     <div
                       key={row.key}
-                      className="grid grid-cols-[1fr_100px_auto] items-end gap-2 rounded-md border border-border p-3"
+                      className="grid grid-cols-[1fr_100px_auto] items-end gap-2 rounded-md border border-border bg-blue-50/60 p-3 dark:bg-blue-950/20"
                     >
                       <div className="space-y-1">
                         <Label className={FIELD_LABEL_CLASS}>Producto / Variante</Label>
