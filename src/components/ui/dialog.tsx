@@ -71,7 +71,7 @@ function DialogContent({
             }
           >
             <XIcon
-              className="h-5 w-5 text-muted-foreground transition-all duration-200 ease-out group-hover:rotate-90 group-hover:text-blue-500 dark:group-hover:text-blue-400"
+              className="size-5 text-muted-foreground transition-transform duration-300 ease-out group-hover:rotate-[360deg] group-hover:text-blue-500 dark:group-hover:text-blue-400"
             />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>

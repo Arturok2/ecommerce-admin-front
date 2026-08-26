@@ -281,6 +281,7 @@ export function CreateOrderForm({ open, onOpenChange, onSuccess }: CreateOrderFo
                   size="sm"
                   onClick={addItemRow}
                   disabled={isSubmitting || isLoadingOptions}
+                  className="border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800 dark:border-blue-800/60 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-950/50"
                 >
                   <Plus className="mr-1 h-4 w-4" />
                   Agregar producto
@@ -288,58 +289,65 @@ export function CreateOrderForm({ open, onOpenChange, onSuccess }: CreateOrderFo
               </div>
 
               <div className="space-y-2">
-                {items.map((row) => {
+                {items.map((row, index) => {
                   const selectedVariant = variantOptions.find((o) => o.id === row.variantId);
                   return (
                     <div
                       key={row.key}
-                      className="grid grid-cols-[1fr_100px_auto] items-end gap-2 rounded-md border border-border bg-blue-50/60 p-3 dark:bg-blue-950/20"
+                      className="space-y-3 rounded-lg border border-blue-200/70 border-l-4 border-l-blue-400 bg-blue-50/40 p-3 dark:border-blue-900/40 dark:border-l-blue-500 dark:bg-blue-950/10"
                     >
-                      <div className="space-y-1">
-                        <Label className={FIELD_LABEL_CLASS}>Producto / Variante</Label>
-                        {/* Mismo patrón: value = id de la variante, SelectValue
-                            muestra el label legible resuelto localmente. */}
-                        <Select
-                          value={row.variantId}
-                          onValueChange={(value) => updateItem(row.key, 'variantId', value)}
-                          disabled={isSubmitting || isLoadingOptions}
+                      <p className="text-xs font-medium text-blue-700/70 dark:text-blue-300/60">
+                        Producto #{index + 1}
+                      </p>
+
+                      <div className="grid grid-cols-[1fr_100px_auto] items-end gap-2">
+                        <div className="space-y-1">
+                          <Label className={FIELD_LABEL_CLASS}>Producto / Variante</Label>
+                          {/* Mismo patrón: value = id de la variante, SelectValue
+                              muestra el label legible resuelto localmente. */}
+                          <Select
+                            value={row.variantId}
+                            onValueChange={(value) => updateItem(row.key, 'variantId', value)}
+                            disabled={isSubmitting || isLoadingOptions}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona una variante">
+                                {selectedVariant?.label}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {variantOptions.map((option) => (
+                                <SelectItem key={option.id} value={option.id}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className={FIELD_LABEL_CLASS}>Cantidad</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={row.cantidad}
+                            onChange={(e) => updateItem(row.key, 'cantidad', e.target.value)}
+                            disabled={isSubmitting}
+                          />
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => removeItemRow(row.key)}
+                          disabled={isSubmitting || items.length === 1}
+                          title="Quitar producto"
+                          className="justify-center gap-2 text-red-600 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona una variante">
-                              {selectedVariant?.label}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {variantOptions.map((option) => (
-                              <SelectItem key={option.id} value={option.id}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                          Quitar
+                        </Button>
                       </div>
-
-                      <div className="space-y-1">
-                        <Label className={FIELD_LABEL_CLASS}>Cantidad</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          value={row.cantidad}
-                          onChange={(e) => updateItem(row.key, 'cantidad', e.target.value)}
-                          disabled={isSubmitting}
-                        />
-                      </div>
-
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeItemRow(row.key)}
-                        disabled={isSubmitting || items.length === 1}
-                        title="Quitar producto"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
                     </div>
                   );
                 })}

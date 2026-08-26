@@ -328,24 +328,32 @@ export function ProductForm({
                     size="sm"
                     onClick={addVariantRow}
                     disabled={isSubmitting}
+                    // Botón "secundario": se distingue de Cancelar (outline neutro)
+                    // y de Guardar (acción principal) con un tinte azul propio.
+                    className="border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800 dark:border-blue-800/60 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-950/50"
                   >
                     <Plus className="mr-1 h-4 w-4" />
                     Agregar Variante
                   </Button>
                 </div>
 
-                <div>
+                <div className="space-y-3">
                   {variants.map((variant, index) => (
                     <div
                       key={variant.key}
-                      className="mb-4 space-y-3 border-b border-border pb-4 last:mb-0 last:border-b-0 last:pb-0"
+                      // Cada variante es su propia tarjeta con acento azul
+                      // (borde izquierdo + fondo muy tenue) para que se
+                      // distinga claramente de la siguiente.
+                      className="space-y-3 rounded-lg border border-blue-200/70 border-l-4 border-l-blue-400 bg-blue-50/40 p-3 dark:border-blue-900/40 dark:border-l-blue-500 dark:bg-blue-950/10"
                     >
-                      <p className="text-xs font-medium text-slate-500 dark:text-blue-300/50">
+                      <p className="text-xs font-medium text-blue-700/70 dark:text-blue-300/60">
                         Variante #{index + 1}
                       </p>
 
-                      {/* Sub-fila 1: SKU, Precio, Stock */}
-                      <div className="grid grid-cols-3 gap-2">
+                      {/* Mobile: 3 columnas → se acomoda en 2 filas (SKU/Precio/Stock,
+                          Color/Talla/Quitar). Desktop (lg+): 6 columnas, todo en una
+                          sola línea. */}
+                      <div className="grid grid-cols-3 gap-2 lg:grid-cols-6 lg:items-end">
                         <div className="space-y-1">
                           <Label className={FIELD_LABEL_CLASS}>SKU</Label>
                           <Input
@@ -377,10 +385,7 @@ export function ProductForm({
                             disabled={isSubmitting}
                           />
                         </div>
-                      </div>
 
-                      {/* Sub-fila 2: Color, Talla, Eliminar */}
-                      <div className="grid grid-cols-3 items-end gap-2">
                         <div className="space-y-1">
                           <Label className={FIELD_LABEL_CLASS}>Color</Label>
                           <Input
