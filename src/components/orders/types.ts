@@ -16,6 +16,23 @@ export interface Customer {
   telefono: string;
 }
 
+// Catálogo servido por el backend (GET /payment-methods), sembrado
+// automáticamente con los métodos más comunes al levantar el servidor.
+export interface PaymentMethod {
+  id: string;
+  nombre: string;
+  posicion: number;
+}
+
+// Catálogo servido por el backend (GET /mexican-states), con las 32
+// entidades federativas de México.
+export interface MexicanState {
+  id: string;
+  nombre: string;
+  clave: string;
+  posicion: number;
+}
+
 export interface ShippingAddress {
   calle: string;
   numeroExt: string;

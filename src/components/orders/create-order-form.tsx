@@ -23,7 +23,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { apiClient, ApiError } from '@/lib/api-client';
 import type { PaginatedResult } from '@/components/products/types';
 import type { Product } from '@/components/products/types';
-import type { Customer } from './types';
+import type { Customer, MexicanState, PaymentMethod } from './types';
 
 interface CreateOrderFormProps {
   open: boolean;
@@ -87,6 +87,8 @@ export function CreateOrderForm({ open, onOpenChange, onSuccess }: CreateOrderFo
   const { toast } = useToast();
 
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [mexicanStates, setMexicanStates] = useState<MexicanState[]>([]);
   const [variantOptions, setVariantOptions] = useState<VariantOption[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
 
@@ -108,10 +110,14 @@ export function CreateOrderForm({ open, onOpenChange, onSuccess }: CreateOrderFo
     Promise.all([
       apiClient.get<Customer[]>('/customers'),
       apiClient.get<PaginatedResult<Product>>('/products?limit=100'),
+      apiClient.get<PaymentMethod[]>('/payment-methods'),
+      apiClient.get<MexicanState[]>('/mexican-states'),
     ])
-      .then(([customersRes, productsRes]) => {
+      .then(([customersRes, productsRes, paymentMethodsRes, mexicanStatesRes]) => {
         setCustomers(customersRes);
         setVariantOptions(buildVariantOptions(productsRes.data));
+        setPaymentMethods(paymentMethodsRes);
+        setMexicanStates(mexicanStatesRes);
       })
       .catch((err) => {
         const message =
@@ -130,6 +136,24 @@ export function CreateOrderForm({ open, onOpenChange, onSuccess }: CreateOrderFo
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!metodoPago) {
+      toast({
+        title: 'Falta el método de pago',
+        description: 'Selecciona un método de pago para la venta.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!address.estado) {
+      toast({
+        title: 'Falta el estado',
+        description: 'Selecciona el estado de la dirección de envío.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     const hasIncompleteItem = items.some((row) => !row.variantId || !row.cantidad);
     if (items.length === 0 || hasIncompleteItem) {
@@ -209,14 +233,22 @@ export function CreateOrderForm({ open, onOpenChange, onSuccess }: CreateOrderFo
                 <Label htmlFor="metodoPago" className={FIELD_LABEL_CLASS}>
                   Método de pago
                 </Label>
-                <Input
-                  id="metodoPago"
+                <Select
                   value={metodoPago}
-                  onChange={(e) => setMetodoPago(e.target.value)}
-                  placeholder="Tarjeta, transferencia..."
-                  required
-                  disabled={isSubmitting}
-                />
+                  onValueChange={setMetodoPago}
+                  disabled={isSubmitting || isLoadingOptions}
+                >
+                  <SelectTrigger id="metodoPago">
+                    <SelectValue placeholder="Tarjeta, transferencia..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {paymentMethods.map((method) => (
+                      <SelectItem key={method.id} value={method.nombre}>
+                        {method.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -253,13 +285,22 @@ export function CreateOrderForm({ open, onOpenChange, onSuccess }: CreateOrderFo
                   required
                   disabled={isSubmitting}
                 />
-                <Input
-                  placeholder="Estado"
+                <Select
                   value={address.estado}
-                  onChange={(e) => setAddress((prev) => ({ ...prev, estado: e.target.value }))}
-                  required
-                  disabled={isSubmitting}
-                />
+                  onValueChange={(value) => setAddress((prev) => ({ ...prev, estado: value }))}
+                  disabled={isSubmitting || isLoadingOptions}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mexicanStates.map((state) => (
+                      <SelectItem key={state.id} value={state.nombre}>
+                        {state.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Input
                   placeholder="Código Postal"
                   value={address.codigoPostal}
