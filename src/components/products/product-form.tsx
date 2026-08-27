@@ -46,6 +46,7 @@ interface BaseFormState {
 // que al enviar se mapean al formato de atributos que espera el backend.
 interface VariantRow {
   key: string;
+  id?: string; // Presente solo en modo edición: id real de la variante en la BD
   sku: string;
   precio: string;
   stock: string;
@@ -96,8 +97,20 @@ export function ProductForm({
         categoriaId: initialData.categoriaId,
         imagenUrl: initialData.imagenes[0] ?? '',
       });
-      // En edición no se tocan variantes (el backend no las acepta en el PATCH del producto base)
-      setVariants([]);
+      // En edición sí se cargan las variantes existentes, para poder
+      // ajustar precio/color/talla. El SKU y el alta/baja de variantes
+      // siguen gestionándose aparte (ver nota en el JSX).
+      setVariants(
+        initialData.variantes.map((v) => ({
+          key: v.id,
+          id: v.id,
+          sku: v.sku,
+          precio: v.precio,
+          stock: String(v.stock),
+          color: v.atributos.find((a) => a.tipo.toLowerCase() === 'color')?.valor ?? '',
+          talla: v.atributos.find((a) => a.tipo.toLowerCase() === 'talla')?.valor ?? '',
+        })),
+      );
     } else {
       setForm(EMPTY_BASE_STATE);
       setVariants([createEmptyVariantRow()]);
@@ -123,19 +136,31 @@ export function ProductForm({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!isEditMode) {
-      const hasIncompleteRow = variants.some(
-        (v) => !v.sku.trim() || !v.precio || !v.stock || !v.color.trim() || !v.talla.trim(),
-      );
+    const hasIncompleteRow = variants.some(
+      (v) =>
+        !v.precio ||
+        v.stock.trim() === '' ||
+        !v.color.trim() ||
+        !v.talla.trim() ||
+        (!isEditMode && !v.sku.trim()),
+    );
 
-      if (variants.length === 0 || hasIncompleteRow) {
-        toast({
-          title: 'Revisa las variantes',
-          description: 'Cada variante necesita SKU, precio, stock, color y talla.',
-          variant: 'destructive',
-        });
-        return;
-      }
+    // En creación siempre se exige al menos una variante; en edición un
+    // producto puede legítimamente no tener ninguna todavía, así que un
+    // arreglo vacío no debe bloquear el guardado de los datos base.
+    const variantsAreInvalid = isEditMode
+      ? hasIncompleteRow
+      : variants.length === 0 || hasIncompleteRow;
+
+    if (variantsAreInvalid) {
+      toast({
+        title: 'Revisa las variantes',
+        description: isEditMode
+          ? 'Cada variante necesita precio, stock, color y talla.'
+          : 'Cada variante necesita SKU, precio, stock, color y talla.',
+        variant: 'destructive',
+      });
+      return;
     }
 
     setIsSubmitting(true);
@@ -151,8 +176,24 @@ export function ProductForm({
 
     try {
       if (isEditMode && initialData) {
-        // Edición básica: solo datos del producto base (el backend no acepta variantes en el PATCH)
+        // Datos base del producto
         await apiClient.patch(`/products/${initialData.id}`, basePayload);
+
+        // Cada variante existente se actualiza por separado (precio, stock,
+        // color, talla). El SKU y el alta/baja de variantes no se tocan aquí.
+        await Promise.all(
+          variants
+            .filter((v) => v.id)
+            .map((v) =>
+              apiClient.patch(`/products/${initialData.id}/variants/${v.id}`, {
+                precio: Number(v.precio),
+                stock: Number(v.stock),
+                color: v.color.trim(),
+                talla: v.talla.trim(),
+              }),
+            ),
+        );
+
         toast({ title: 'Producto actualizado correctamente' });
       } else {
         await apiClient.post('/products', {
@@ -310,18 +351,12 @@ export function ProductForm({
               </div>
             </div>
 
-            {/* Sub-formulario dinámico de variantes — solo en modo creación */}
-            {isEditMode ? (
-              <p className="rounded-md bg-blue-50/50 p-3 text-sm text-slate-600 dark:bg-zinc-900/80 dark:text-blue-300/70">
-                Las variantes (color, talla, stock, precio) se administran por separado y no se
-                modifican desde este formulario de edición.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-semibold text-slate-800 dark:text-blue-200/90">
-                    Variantes del Producto (Tallas y Colores)
-                  </Label>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold text-slate-800 dark:text-blue-200/90">
+                  Variantes del Producto (Tallas y Colores)
+                </Label>
+                {!isEditMode && (
                   <Button
                     type="button"
                     variant="outline"
@@ -335,8 +370,21 @@ export function ProductForm({
                     <Plus className="mr-1 h-4 w-4" />
                     Agregar Variante
                   </Button>
-                </div>
+                )}
+              </div>
 
+              {isEditMode && (
+                <p className="rounded-md bg-blue-50/50 p-3 text-sm text-slate-600 dark:bg-zinc-900/80 dark:text-blue-300/70">
+                  Puedes editar el precio, color y talla de cada variante. El SKU y el alta/baja de
+                  variantes se gestionan por separado.
+                </p>
+              )}
+
+              {isEditMode && variants.length === 0 ? (
+                <p className="rounded-md border border-dashed p-3 text-sm text-slate-500 dark:text-blue-300/60">
+                  Este producto no tiene variantes registradas.
+                </p>
+              ) : (
                 <div className="space-y-3">
                   {variants.map((variant, index) => (
                     <div
@@ -359,7 +407,9 @@ export function ProductForm({
                           <Input
                             value={variant.sku}
                             onChange={(e) => updateVariantField(variant.key, 'sku', e.target.value)}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isEditMode}
+                            title={isEditMode ? 'El SKU no se puede editar' : undefined}
+                            className={isEditMode ? 'text-muted-foreground' : undefined}
                           />
                         </div>
 
@@ -406,23 +456,25 @@ export function ProductForm({
                           />
                         </div>
 
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => removeVariantRow(variant.key)}
-                          disabled={isSubmitting || variants.length === 1}
-                          title="Quitar variante"
-                          className="justify-center gap-2 text-red-600 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          Quitar
-                        </Button>
+                        {!isEditMode && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => removeVariantRow(variant.key)}
+                            disabled={isSubmitting || variants.length === 1}
+                            title="Quitar variante"
+                            className="justify-center gap-2 text-red-600 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Quitar
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Modal Footer: fijo, fuera del área con scroll */}
