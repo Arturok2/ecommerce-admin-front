@@ -43,6 +43,28 @@ const EMPTY_STATE: FormState = { nombre: '', posicion: '0', parentId: NO_PARENT_
 // Tono sutil armónico para labels, consistente con el resto del sistema.
 const FIELD_LABEL_CLASS = 'text-xs text-slate-600 dark:text-blue-300/70';
 
+interface FieldErrors {
+  nombre?: string;
+  posicion?: string;
+}
+
+function validateCategory(form: FormState): FieldErrors {
+  const errors: FieldErrors = {};
+
+  if (!form.nombre.trim()) {
+    errors.nombre = 'El nombre de la categoría es obligatorio';
+  }
+
+  // Posición vacía se trata como 0 (no es error); solo se marca si el
+  // usuario escribió algo que no sea un entero no negativo.
+  const posicion = form.posicion.trim();
+  if (posicion && (!/^\d+$/.test(posicion) || Number(posicion) < 0)) {
+    errors.posicion = 'Debe ser un número entero, 0 o mayor';
+  }
+
+  return errors;
+}
+
 export function CategoryForm({
   open,
   onOpenChange,
@@ -52,6 +74,7 @@ export function CategoryForm({
 }: CategoryFormProps) {
   const { toast } = useToast();
   const [form, setForm] = useState<FormState>(EMPTY_STATE);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isEditMode = initialData !== null;
@@ -59,6 +82,7 @@ export function CategoryForm({
   // Sincroniza el formulario cada vez que se abre (crear vacío / editar con datos)
   useEffect(() => {
     if (!open) return;
+    setFieldErrors({});
 
     if (initialData) {
       setForm({
@@ -76,11 +100,21 @@ export function CategoryForm({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    const errors = validateCategory(form);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
     setIsSubmitting(true);
 
     const payload = {
       nombre: form.nombre.trim(),
-      posicion: Number(form.posicion),
+      // Posición vacía → 0 (Number('') ya es 0, pero se deja explícito
+      // para que la regla quede clara y no dependa de ese detalle de JS).
+      posicion: form.posicion.trim() ? Number(form.posicion) : 0,
       parentId: form.parentId === NO_PARENT_VALUE ? undefined : form.parentId,
     };
 
@@ -120,7 +154,7 @@ export function CategoryForm({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
           <div className="flex-1 space-y-4 overflow-y-auto p-6">
             <div className="space-y-2">
               <Label htmlFor="nombre" className={FIELD_LABEL_CLASS}>
@@ -129,10 +163,16 @@ export function CategoryForm({
               <Input
                 id="nombre"
                 value={form.nombre}
-                onChange={(e) => setForm((prev) => ({ ...prev, nombre: e.target.value }))}
-                required
+                onChange={(e) => {
+                  setForm((prev) => ({ ...prev, nombre: e.target.value }));
+                  if (fieldErrors.nombre) setFieldErrors((prev) => ({ ...prev, nombre: undefined }));
+                }}
+                aria-invalid={Boolean(fieldErrors.nombre)}
                 disabled={isSubmitting}
               />
+              {fieldErrors.nombre && (
+                <p className="text-xs font-medium text-red-500">{fieldErrors.nombre}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -143,11 +183,20 @@ export function CategoryForm({
                 id="posicion"
                 type="number"
                 min={0}
+                placeholder="0"
                 value={form.posicion}
-                onChange={(e) => setForm((prev) => ({ ...prev, posicion: e.target.value }))}
-                required
+                onChange={(e) => {
+                  setForm((prev) => ({ ...prev, posicion: e.target.value }));
+                  if (fieldErrors.posicion) setFieldErrors((prev) => ({ ...prev, posicion: undefined }));
+                }}
+                aria-invalid={Boolean(fieldErrors.posicion)}
                 disabled={isSubmitting}
               />
+              {fieldErrors.posicion ? (
+                <p className="text-xs font-medium text-red-500">{fieldErrors.posicion}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">Si se deja vacío, se guarda como 0.</p>
+              )}
             </div>
 
             <div className="space-y-2">

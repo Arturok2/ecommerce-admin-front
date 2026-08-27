@@ -44,6 +44,29 @@ const SECTION_TITLE_CLASS = 'text-sm font-semibold text-slate-800 dark:text-blue
 const DT_CLASS = 'inline font-medium text-slate-500 dark:text-blue-300/50';
 const DD_CLASS = 'inline text-slate-700 dark:text-blue-100/90';
 
+// Rango del flujo normal de una orden: solo se puede avanzar
+// (EN_PREPARACION → ENVIADO → COMPLETADO), nunca retroceder — ej. si ya
+// pasó a ENVIADO, no puede volver a EN_PREPARACION.
+const ESTADO_RANK: Partial<Record<EstadoOrden, number>> = {
+  EN_PREPARACION: 0,
+  ENVIADO: 1,
+  COMPLETADO: 2,
+};
+
+// CANCELADO es la única excepción al flujo lineal: se puede cancelar desde
+// cualquier estado que no sea ya un estado final (COMPLETADO o CANCELADO).
+// COMPLETADO y CANCELADO son estados finales — desde ahí ya no se permite
+// ningún otro cambio.
+function isValidTransition(current: EstadoOrden, target: EstadoOrden): boolean {
+  if (target === current) return false;
+  if (current === 'COMPLETADO' || current === 'CANCELADO') return false;
+  if (target === 'CANCELADO') return true;
+
+  const currentRank = ESTADO_RANK[current] ?? 0;
+  const targetRank = ESTADO_RANK[target] ?? 0;
+  return targetRank > currentRank;
+}
+
 export function OrderDetailsModal({
   orderId,
   open,
@@ -58,6 +81,7 @@ export function OrderDetailsModal({
   const [nuevoEstado, setNuevoEstado] = useState<EstadoOrden | ''>('');
   const [nota, setNota] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [estadoError, setEstadoError] = useState<string | null>(null);
 
   const fetchOrder = async () => {
     if (!orderId) return;
@@ -67,6 +91,7 @@ export function OrderDetailsModal({
       setOrder(data);
       setNuevoEstado('');
       setNota('');
+      setEstadoError(null);
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'No se pudo cargar la orden';
       toast({ title: 'Error', description: message, variant: 'destructive' });
@@ -86,14 +111,20 @@ export function OrderDetailsModal({
 
   const handleUpdateStatus = async () => {
     if (!orderId || !nuevoEstado) {
-      toast({
-        title: 'Selecciona un estado',
-        description: 'Elige el nuevo estado antes de actualizar.',
-        variant: 'destructive',
-      });
+      setEstadoError('Selecciona el nuevo estado');
       return;
     }
 
+    if (order && !isValidTransition(order.estadoOrden, nuevoEstado)) {
+      setEstadoError(
+        order.estadoOrden === 'COMPLETADO' || order.estadoOrden === 'CANCELADO'
+          ? `La orden ya está en un estado final (${order.estadoOrden}) y no admite más cambios`
+          : `No puede retroceder de ${order.estadoOrden} a ${nuevoEstado}`,
+      );
+      return;
+    }
+
+    setEstadoError(null);
     setIsUpdating(true);
     try {
       const updated = await apiClient.patch<OrderDetail>(`/orders/${orderId}/status`, {
@@ -255,22 +286,32 @@ export function OrderDetailsModal({
                 <h3 className={SECTION_TITLE_CLASS}>Actualizar Estado</h3>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <Select
-                    value={nuevoEstado}
-                    onValueChange={(value) => setNuevoEstado(value as EstadoOrden)}
-                    disabled={isUpdating}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona el nuevo estado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ESTADO_ORDEN_OPTIONS.map((estado) => (
-                        <SelectItem key={estado} value={estado}>
-                          {estado}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-1">
+                    <Select
+                      value={nuevoEstado}
+                      onValueChange={(value) => {
+                        setNuevoEstado(value as EstadoOrden);
+                        setEstadoError(null);
+                      }}
+                      disabled={isUpdating}
+                    >
+                      <SelectTrigger className={estadoError ? 'border-red-500 ring-3 ring-red-500/20' : undefined}>
+                        <SelectValue placeholder="Selecciona el nuevo estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ESTADO_ORDEN_OPTIONS.map((estado) => (
+                          <SelectItem
+                            key={estado}
+                            value={estado}
+                            disabled={!isValidTransition(order.estadoOrden, estado)}
+                          >
+                            {estado}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {estadoError && <p className="text-xs font-medium text-red-500">{estadoError}</p>}
+                  </div>
 
                   <Button onClick={handleUpdateStatus} disabled={isUpdating}>
                     {isUpdating ? 'Actualizando...' : 'Actualizar Estado'}

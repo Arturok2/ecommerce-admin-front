@@ -67,6 +67,70 @@ const EMPTY_BASE_STATE: BaseFormState = {
 // paleta púrpura pastel, en vez del gris plano heredado (text-slate-500).
 const FIELD_LABEL_CLASS = 'text-xs text-slate-600 dark:text-blue-300/70';
 
+interface BaseFormErrors {
+  nombre?: string;
+  descripcion?: string;
+  marca?: string;
+  genero?: string;
+  categoriaId?: string;
+}
+
+interface VariantRowErrors {
+  sku?: string;
+  precio?: string;
+  stock?: string;
+  color?: string;
+  talla?: string;
+}
+
+function validateBaseForm(form: BaseFormState): BaseFormErrors {
+  const errors: BaseFormErrors = {};
+
+  if (!form.nombre.trim()) errors.nombre = 'El nombre es obligatorio';
+  if (!form.descripcion.trim()) errors.descripcion = 'La descripción es obligatoria';
+  if (!form.marca.trim()) errors.marca = 'La marca es obligatoria';
+  if (!form.genero) errors.genero = 'Selecciona un género';
+  if (!form.categoriaId) errors.categoriaId = 'Selecciona una categoría';
+
+  return errors;
+}
+
+// Solo dígitos, con hasta 2 decimales opcionales — sin letras, sin signo
+// negativo. Number(str) > 0 al final descarta "0" y "0.00".
+const POSITIVE_DECIMAL_REGEX = /^\d+(\.\d{1,2})?$/;
+// Solo dígitos enteros — sin letras, sin signo negativo, sin decimales.
+const POSITIVE_INTEGER_REGEX = /^\d+$/;
+
+function validateVariantRow(variant: VariantRow, isEditMode: boolean): VariantRowErrors {
+  const errors: VariantRowErrors = {};
+
+  if (!isEditMode && !variant.sku.trim()) {
+    errors.sku = 'El SKU es obligatorio';
+  }
+
+  const precio = variant.precio.trim();
+  if (!precio) {
+    errors.precio = 'El precio es obligatorio';
+  } else if (!POSITIVE_DECIMAL_REGEX.test(precio) || Number(precio) <= 0) {
+    errors.precio = 'Solo números positivos, sin letras';
+  }
+
+  // Nota: se interpreta "positivo" de forma literal (> 0). Si en la práctica
+  // 0 debe ser un valor válido para "sin existencias", solo hay que cambiar
+  // Number(stock) <= 0 por Number(stock) < 0 aquí abajo.
+  const stock = variant.stock.trim();
+  if (!stock) {
+    errors.stock = 'El stock es obligatorio';
+  } else if (!POSITIVE_INTEGER_REGEX.test(stock) || Number(stock) <= 0) {
+    errors.stock = 'Solo números positivos, sin letras';
+  }
+
+  if (!variant.color.trim()) errors.color = 'El color es obligatorio';
+  if (!variant.talla.trim()) errors.talla = 'La talla es obligatoria';
+
+  return errors;
+}
+
 function createEmptyVariantRow(): VariantRow {
   return { key: crypto.randomUUID(), sku: '', precio: '', stock: '', color: '', talla: '' };
 }
@@ -82,11 +146,15 @@ export function ProductForm({
   const [form, setForm] = useState<BaseFormState>(EMPTY_BASE_STATE);
   const [variants, setVariants] = useState<VariantRow[]>([createEmptyVariantRow()]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [baseErrors, setBaseErrors] = useState<BaseFormErrors>({});
+  const [variantErrors, setVariantErrors] = useState<Record<string, VariantRowErrors>>({});
 
   const isEditMode = initialData !== null;
 
   useEffect(() => {
     if (!open) return;
+    setBaseErrors({});
+    setVariantErrors({});
 
     if (initialData) {
       setForm({
@@ -119,10 +187,14 @@ export function ProductForm({
 
   const updateField = <K extends keyof BaseFormState>(field: K, value: BaseFormState[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    if (baseErrors[field]) setBaseErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
   const updateVariantField = (key: string, field: keyof VariantRow, value: string) => {
     setVariants((prev) => prev.map((row) => (row.key === key ? { ...row, [field]: value } : row)));
+    if (variantErrors[key]?.[field as keyof VariantRowErrors]) {
+      setVariantErrors((prev) => ({ ...prev, [key]: { ...prev[key], [field]: undefined } }));
+    }
   };
 
   const addVariantRow = () => {
@@ -136,33 +208,38 @@ export function ProductForm({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const hasIncompleteRow = variants.some(
-      (v) =>
-        !v.precio ||
-        v.stock.trim() === '' ||
-        !v.color.trim() ||
-        !v.talla.trim() ||
-        (!isEditMode && !v.sku.trim()),
-    );
+    const baseFormErrors = validateBaseForm(form);
+
+    const rowErrorsMap: Record<string, VariantRowErrors> = {};
+    for (const variant of variants) {
+      const rowErrors = validateVariantRow(variant, isEditMode);
+      if (Object.keys(rowErrors).length > 0) rowErrorsMap[variant.key] = rowErrors;
+    }
 
     // En creación siempre se exige al menos una variante; en edición un
-    // producto puede legítimamente no tener ninguna todavía, así que un
-    // arreglo vacío no debe bloquear el guardado de los datos base.
-    const variantsAreInvalid = isEditMode
-      ? hasIncompleteRow
-      : variants.length === 0 || hasIncompleteRow;
+    // producto puede legítimamente no tener ninguna todavía.
+    const needsAtLeastOneVariant = !isEditMode && variants.length === 0;
 
-    if (variantsAreInvalid) {
+    const hasErrors =
+      Object.keys(baseFormErrors).length > 0 ||
+      Object.keys(rowErrorsMap).length > 0 ||
+      needsAtLeastOneVariant;
+
+    if (hasErrors) {
+      setBaseErrors(baseFormErrors);
+      setVariantErrors(rowErrorsMap);
       toast({
-        title: 'Revisa las variantes',
-        description: isEditMode
-          ? 'Cada variante necesita precio, stock, color y talla.'
-          : 'Cada variante necesita SKU, precio, stock, color y talla.',
+        title: 'Revisa el formulario',
+        description: needsAtLeastOneVariant
+          ? 'Agrega al menos una variante con todos sus datos.'
+          : 'Hay campos obligatorios pendientes o inválidos.',
         variant: 'destructive',
       });
       return;
     }
 
+    setBaseErrors({});
+    setVariantErrors({});
     setIsSubmitting(true);
 
     const basePayload = {
@@ -238,7 +315,7 @@ export function ProductForm({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
           {/* Modal Body: único bloque con scroll — header y footer quedan fijos */}
           <div className="flex-1 space-y-6 overflow-y-auto p-6">
             {/* Datos del producto base */}
@@ -251,9 +328,12 @@ export function ProductForm({
                   id="nombre"
                   value={form.nombre}
                   onChange={(e) => updateField('nombre', e.target.value)}
-                  required
+                  aria-invalid={Boolean(baseErrors.nombre)}
                   disabled={isSubmitting}
                 />
+                {baseErrors.nombre && (
+                  <p className="text-xs font-medium text-red-500">{baseErrors.nombre}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -264,10 +344,13 @@ export function ProductForm({
                   id="descripcion"
                   value={form.descripcion}
                   onChange={(e) => updateField('descripcion', e.target.value)}
-                  required
+                  aria-invalid={Boolean(baseErrors.descripcion)}
                   disabled={isSubmitting}
                   rows={3}
                 />
+                {baseErrors.descripcion && (
+                  <p className="text-xs font-medium text-red-500">{baseErrors.descripcion}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -279,9 +362,12 @@ export function ProductForm({
                     id="marca"
                     value={form.marca}
                     onChange={(e) => updateField('marca', e.target.value)}
-                    required
+                    aria-invalid={Boolean(baseErrors.marca)}
                     disabled={isSubmitting}
                   />
+                  {baseErrors.marca && (
+                    <p className="text-xs font-medium text-red-500">{baseErrors.marca}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -293,7 +379,10 @@ export function ProductForm({
                     onValueChange={(value) => updateField('genero', value as Genero)}
                     disabled={isSubmitting}
                   >
-                    <SelectTrigger id="genero">
+                    <SelectTrigger
+                      id="genero"
+                      className={baseErrors.genero ? 'border-red-500 ring-3 ring-red-500/20' : undefined}
+                    >
                       <SelectValue placeholder="Selecciona un género" />
                     </SelectTrigger>
                     <SelectContent>
@@ -304,6 +393,9 @@ export function ProductForm({
                       ))}
                     </SelectContent>
                   </Select>
+                  {baseErrors.genero && (
+                    <p className="text-xs font-medium text-red-500">{baseErrors.genero}</p>
+                  )}
                 </div>
               </div>
 
@@ -321,7 +413,10 @@ export function ProductForm({
                     onValueChange={(value) => updateField('categoriaId', value)}
                     disabled={isSubmitting}
                   >
-                    <SelectTrigger id="categoriaId">
+                    <SelectTrigger
+                      id="categoriaId"
+                      className={baseErrors.categoriaId ? 'border-red-500 ring-3 ring-red-500/20' : undefined}
+                    >
                       <SelectValue placeholder="Selecciona una categoría">
                         {categories.find((category) => category.id === form.categoriaId)?.nombre}
                       </SelectValue>
@@ -334,6 +429,9 @@ export function ProductForm({
                       ))}
                     </SelectContent>
                   </Select>
+                  {baseErrors.categoriaId && (
+                    <p className="text-xs font-medium text-red-500">{baseErrors.categoriaId}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -386,7 +484,9 @@ export function ProductForm({
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {variants.map((variant, index) => (
+                  {variants.map((variant, index) => {
+                    const rowErrors = variantErrors[variant.key];
+                    return (
                     <div
                       key={variant.key}
                       // Cada variante es su propia tarjeta con acento azul
@@ -401,16 +501,20 @@ export function ProductForm({
                       {/* Mobile: 3 columnas → se acomoda en 2 filas (SKU/Precio/Stock,
                           Color/Talla/Quitar). Desktop (lg+): 6 columnas, todo en una
                           sola línea. */}
-                      <div className="grid grid-cols-3 gap-2 lg:grid-cols-6 lg:items-end">
+                      <div className="grid grid-cols-3 gap-2 lg:grid-cols-6 lg:items-start">
                         <div className="space-y-1">
                           <Label className={FIELD_LABEL_CLASS}>SKU</Label>
                           <Input
                             value={variant.sku}
                             onChange={(e) => updateVariantField(variant.key, 'sku', e.target.value)}
+                            aria-invalid={Boolean(rowErrors?.sku)}
                             disabled={isSubmitting || isEditMode}
                             title={isEditMode ? 'El SKU no se puede editar' : undefined}
                             className={isEditMode ? 'text-muted-foreground' : undefined}
                           />
+                          {rowErrors?.sku && (
+                            <p className="text-xs font-medium text-red-500">{rowErrors.sku}</p>
+                          )}
                         </div>
 
                         <div className="space-y-1">
@@ -421,8 +525,12 @@ export function ProductForm({
                             step="0.01"
                             value={variant.precio}
                             onChange={(e) => updateVariantField(variant.key, 'precio', e.target.value)}
+                            aria-invalid={Boolean(rowErrors?.precio)}
                             disabled={isSubmitting}
                           />
+                          {rowErrors?.precio && (
+                            <p className="text-xs font-medium text-red-500">{rowErrors.precio}</p>
+                          )}
                         </div>
 
                         <div className="space-y-1">
@@ -432,8 +540,12 @@ export function ProductForm({
                             min={0}
                             value={variant.stock}
                             onChange={(e) => updateVariantField(variant.key, 'stock', e.target.value)}
+                            aria-invalid={Boolean(rowErrors?.stock)}
                             disabled={isSubmitting}
                           />
+                          {rowErrors?.stock && (
+                            <p className="text-xs font-medium text-red-500">{rowErrors.stock}</p>
+                          )}
                         </div>
 
                         <div className="space-y-1">
@@ -442,8 +554,12 @@ export function ProductForm({
                             value={variant.color}
                             onChange={(e) => updateVariantField(variant.key, 'color', e.target.value)}
                             placeholder="Blanco"
+                            aria-invalid={Boolean(rowErrors?.color)}
                             disabled={isSubmitting}
                           />
+                          {rowErrors?.color && (
+                            <p className="text-xs font-medium text-red-500">{rowErrors.color}</p>
+                          )}
                         </div>
 
                         <div className="space-y-1">
@@ -452,8 +568,12 @@ export function ProductForm({
                             value={variant.talla}
                             onChange={(e) => updateVariantField(variant.key, 'talla', e.target.value)}
                             placeholder="27"
+                            aria-invalid={Boolean(rowErrors?.talla)}
                             disabled={isSubmitting}
                           />
+                          {rowErrors?.talla && (
+                            <p className="text-xs font-medium text-red-500">{rowErrors.talla}</p>
+                          )}
                         </div>
 
                         {!isEditMode && (
@@ -471,7 +591,8 @@ export function ProductForm({
                         )}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

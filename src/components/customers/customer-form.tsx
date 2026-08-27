@@ -31,24 +31,75 @@ const EMPTY_STATE: FormState = { nombre: '', email: '', telefono: '' };
 // Tono sutil armónico para labels, consistente con el resto del sistema.
 const FIELD_LABEL_CLASS = 'text-xs text-slate-600 dark:text-blue-300/70';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Exactamente 10 dígitos numéricos, nada de letras/símbolos.
+const PHONE_REGEX = /^\d{10}$/;
+const ALL_ZEROS_REGEX = /^0+$/;
+
+interface FieldErrors {
+  nombre?: string;
+  email?: string;
+  telefono?: string;
+}
+
+function validateCustomer(form: FormState): FieldErrors {
+  const errors: FieldErrors = {};
+
+  const nombre = form.nombre.trim();
+  const email = form.email.trim();
+  const telefono = form.telefono.trim();
+
+  if (!nombre) {
+    errors.nombre = 'El nombre es obligatorio';
+  }
+
+  if (!email) {
+    errors.email = 'El correo es obligatorio';
+  } else if (!EMAIL_REGEX.test(email)) {
+    errors.email = 'Ingresa un correo válido';
+  }
+
+  // Teléfono es opcional: solo se valida si el usuario escribió algo.
+  if (telefono) {
+    if (!PHONE_REGEX.test(telefono)) {
+      errors.telefono = 'Debe tener exactamente 10 dígitos numéricos, sin letras ni símbolos';
+    } else if (ALL_ZEROS_REGEX.test(telefono)) {
+      errors.telefono = 'El teléfono no puede ser solo ceros';
+    }
+  }
+
+  return errors;
+}
+
 export function CustomerForm({ open, onOpenChange, onSuccess }: CustomerFormProps) {
   const { toast } = useToast();
   const [form, setForm] = useState<FormState>(EMPTY_STATE);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [isLoading, setIsLoading] = useState(false);
 
   const updateField = <K extends keyof FormState>(field: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    if (fieldErrors[field]) setFieldErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    const errors = validateCustomer(form);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
     setIsLoading(true);
 
     try {
       await apiClient.post('/customers', {
         nombre: form.nombre.trim(),
         email: form.email.trim(),
-        telefono: form.telefono.trim(),
+        // Teléfono opcional: si quedó vacío, no se manda como cadena vacía.
+        telefono: form.telefono.trim() || undefined,
       });
 
       toast({ title: 'Cliente creado correctamente' });
@@ -65,7 +116,10 @@ export function CustomerForm({ open, onOpenChange, onSuccess }: CustomerFormProp
 
   // Al cerrar el modal (cancelar o click fuera), limpia el formulario
   const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) setForm(EMPTY_STATE);
+    if (!nextOpen) {
+      setForm(EMPTY_STATE);
+      setFieldErrors({});
+    }
     onOpenChange(nextOpen);
   };
 
@@ -84,7 +138,7 @@ export function CustomerForm({ open, onOpenChange, onSuccess }: CustomerFormProp
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
           <div className="flex-1 space-y-4 overflow-y-auto p-6">
             <div className="space-y-2">
               <Label htmlFor="nombre" className={FIELD_LABEL_CLASS}>
@@ -94,9 +148,12 @@ export function CustomerForm({ open, onOpenChange, onSuccess }: CustomerFormProp
                 id="nombre"
                 value={form.nombre}
                 onChange={(e) => updateField('nombre', e.target.value)}
-                required
+                aria-invalid={Boolean(fieldErrors.nombre)}
                 disabled={isLoading}
               />
+              {fieldErrors.nombre && (
+                <p className="text-xs font-medium text-red-500">{fieldErrors.nombre}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -108,23 +165,31 @@ export function CustomerForm({ open, onOpenChange, onSuccess }: CustomerFormProp
                 type="email"
                 value={form.email}
                 onChange={(e) => updateField('email', e.target.value)}
-                required
+                aria-invalid={Boolean(fieldErrors.email)}
                 disabled={isLoading}
               />
+              {fieldErrors.email && (
+                <p className="text-xs font-medium text-red-500">{fieldErrors.email}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="telefono" className={FIELD_LABEL_CLASS}>
-                Teléfono
+                Teléfono (opcional)
               </Label>
               <Input
                 id="telefono"
                 type="tel"
+                inputMode="numeric"
+                placeholder="10 dígitos"
                 value={form.telefono}
                 onChange={(e) => updateField('telefono', e.target.value)}
-                required
+                aria-invalid={Boolean(fieldErrors.telefono)}
                 disabled={isLoading}
               />
+              {fieldErrors.telefono && (
+                <p className="text-xs font-medium text-red-500">{fieldErrors.telefono}</p>
+              )}
             </div>
           </div>
 

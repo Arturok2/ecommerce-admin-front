@@ -162,18 +162,30 @@ function SelectContent({ className, children }: React.ComponentProps<"div">) {
   )
 }
 
-function SelectItem({ value, className, children }: { value: string; className?: string; children: React.ReactNode }) {
+function SelectItem({
+  value,
+  className,
+  children,
+  disabled,
+}: {
+  value: string
+  className?: string
+  children: React.ReactNode
+  disabled?: boolean
+}) {
   const context = useSelectContext()
   const isSelected = context.value === value
   return (
     <button
       type="button"
+      disabled={disabled}
       data-selected={isSelected || undefined}
       className={cn(
-        "flex w-full cursor-default items-center rounded-md px-2 py-1.5 text-left text-sm outline-none hover:bg-accent data-[selected]:bg-accent/70",
+        "flex w-full cursor-default items-center rounded-md px-2 py-1.5 text-left text-sm outline-none hover:bg-accent data-[selected]:bg-accent/70 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent",
         className
       )}
       onClick={() => {
+        if (disabled) return
         context.onValueChange?.(value)
         context.setOpen(false)
       }}
