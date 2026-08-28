@@ -187,7 +187,9 @@ export function ProductForm({
 
   const updateField = <K extends keyof BaseFormState>(field: K, value: BaseFormState[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    if (baseErrors[field]) setBaseErrors((prev) => ({ ...prev, [field]: undefined }));
+    if (baseErrors[field as keyof BaseFormErrors]) {
+      setBaseErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
   };
 
   const updateVariantField = (key: string, field: keyof VariantRow, value: string) => {
@@ -487,110 +489,110 @@ export function ProductForm({
                   {variants.map((variant, index) => {
                     const rowErrors = variantErrors[variant.key];
                     return (
-                    <div
-                      key={variant.key}
-                      // Cada variante es su propia tarjeta con acento azul
-                      // (borde izquierdo + fondo muy tenue) para que se
-                      // distinga claramente de la siguiente.
-                      className="space-y-3 rounded-lg border border-blue-200/70 border-l-4 border-l-blue-400 bg-blue-50/40 p-3 dark:border-blue-900/40 dark:border-l-blue-500 dark:bg-blue-950/10"
-                    >
-                      <p className="text-xs font-medium text-blue-700/70 dark:text-blue-300/60">
-                        Variante #{index + 1}
-                      </p>
+                      <div
+                        key={variant.key}
+                        // Cada variante es su propia tarjeta con acento azul
+                        // (borde izquierdo + fondo muy tenue) para que se
+                        // distinga claramente de la siguiente.
+                        className="space-y-3 rounded-lg border border-blue-200/70 border-l-4 border-l-blue-400 bg-blue-50/40 p-3 dark:border-blue-900/40 dark:border-l-blue-500 dark:bg-blue-950/10"
+                      >
+                        <p className="text-xs font-medium text-blue-700/70 dark:text-blue-300/60">
+                          Variante #{index + 1}
+                        </p>
 
-                      {/* Mobile: 3 columnas → se acomoda en 2 filas (SKU/Precio/Stock,
+                        {/* Mobile: 3 columnas → se acomoda en 2 filas (SKU/Precio/Stock,
                           Color/Talla/Quitar). Desktop (lg+): 6 columnas, todo en una
                           sola línea. */}
-                      <div className="grid grid-cols-3 gap-2 lg:grid-cols-6 lg:items-start">
-                        <div className="space-y-1">
-                          <Label className={FIELD_LABEL_CLASS}>SKU</Label>
-                          <Input
-                            value={variant.sku}
-                            onChange={(e) => updateVariantField(variant.key, 'sku', e.target.value)}
-                            aria-invalid={Boolean(rowErrors?.sku)}
-                            disabled={isSubmitting || isEditMode}
-                            title={isEditMode ? 'El SKU no se puede editar' : undefined}
-                            className={isEditMode ? 'text-muted-foreground' : undefined}
-                          />
-                          {rowErrors?.sku && (
-                            <p className="text-xs font-medium text-red-500">{rowErrors.sku}</p>
+                        <div className="grid grid-cols-3 gap-2 lg:grid-cols-6 lg:items-start">
+                          <div className="space-y-1">
+                            <Label className={FIELD_LABEL_CLASS}>SKU</Label>
+                            <Input
+                              value={variant.sku}
+                              onChange={(e) => updateVariantField(variant.key, 'sku', e.target.value)}
+                              aria-invalid={Boolean(rowErrors?.sku)}
+                              disabled={isSubmitting || isEditMode}
+                              title={isEditMode ? 'El SKU no se puede editar' : undefined}
+                              className={isEditMode ? 'text-muted-foreground' : undefined}
+                            />
+                            {rowErrors?.sku && (
+                              <p className="text-xs font-medium text-red-500">{rowErrors.sku}</p>
+                            )}
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label className={FIELD_LABEL_CLASS}>Precio</Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              value={variant.precio}
+                              onChange={(e) => updateVariantField(variant.key, 'precio', e.target.value)}
+                              aria-invalid={Boolean(rowErrors?.precio)}
+                              disabled={isSubmitting}
+                            />
+                            {rowErrors?.precio && (
+                              <p className="text-xs font-medium text-red-500">{rowErrors.precio}</p>
+                            )}
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label className={FIELD_LABEL_CLASS}>Stock</Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={variant.stock}
+                              onChange={(e) => updateVariantField(variant.key, 'stock', e.target.value)}
+                              aria-invalid={Boolean(rowErrors?.stock)}
+                              disabled={isSubmitting}
+                            />
+                            {rowErrors?.stock && (
+                              <p className="text-xs font-medium text-red-500">{rowErrors.stock}</p>
+                            )}
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label className={FIELD_LABEL_CLASS}>Color</Label>
+                            <Input
+                              value={variant.color}
+                              onChange={(e) => updateVariantField(variant.key, 'color', e.target.value)}
+                              placeholder="Blanco"
+                              aria-invalid={Boolean(rowErrors?.color)}
+                              disabled={isSubmitting}
+                            />
+                            {rowErrors?.color && (
+                              <p className="text-xs font-medium text-red-500">{rowErrors.color}</p>
+                            )}
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label className={FIELD_LABEL_CLASS}>Talla</Label>
+                            <Input
+                              value={variant.talla}
+                              onChange={(e) => updateVariantField(variant.key, 'talla', e.target.value)}
+                              placeholder="27"
+                              aria-invalid={Boolean(rowErrors?.talla)}
+                              disabled={isSubmitting}
+                            />
+                            {rowErrors?.talla && (
+                              <p className="text-xs font-medium text-red-500">{rowErrors.talla}</p>
+                            )}
+                          </div>
+
+                          {!isEditMode && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => removeVariantRow(variant.key)}
+                              disabled={isSubmitting || variants.length === 1}
+                              title="Quitar variante"
+                              className="self-end justify-center gap-2 text-red-600 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Quitar
+                            </Button>
                           )}
                         </div>
-
-                        <div className="space-y-1">
-                          <Label className={FIELD_LABEL_CLASS}>Precio</Label>
-                          <Input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            value={variant.precio}
-                            onChange={(e) => updateVariantField(variant.key, 'precio', e.target.value)}
-                            aria-invalid={Boolean(rowErrors?.precio)}
-                            disabled={isSubmitting}
-                          />
-                          {rowErrors?.precio && (
-                            <p className="text-xs font-medium text-red-500">{rowErrors.precio}</p>
-                          )}
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label className={FIELD_LABEL_CLASS}>Stock</Label>
-                          <Input
-                            type="number"
-                            min={0}
-                            value={variant.stock}
-                            onChange={(e) => updateVariantField(variant.key, 'stock', e.target.value)}
-                            aria-invalid={Boolean(rowErrors?.stock)}
-                            disabled={isSubmitting}
-                          />
-                          {rowErrors?.stock && (
-                            <p className="text-xs font-medium text-red-500">{rowErrors.stock}</p>
-                          )}
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label className={FIELD_LABEL_CLASS}>Color</Label>
-                          <Input
-                            value={variant.color}
-                            onChange={(e) => updateVariantField(variant.key, 'color', e.target.value)}
-                            placeholder="Blanco"
-                            aria-invalid={Boolean(rowErrors?.color)}
-                            disabled={isSubmitting}
-                          />
-                          {rowErrors?.color && (
-                            <p className="text-xs font-medium text-red-500">{rowErrors.color}</p>
-                          )}
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label className={FIELD_LABEL_CLASS}>Talla</Label>
-                          <Input
-                            value={variant.talla}
-                            onChange={(e) => updateVariantField(variant.key, 'talla', e.target.value)}
-                            placeholder="27"
-                            aria-invalid={Boolean(rowErrors?.talla)}
-                            disabled={isSubmitting}
-                          />
-                          {rowErrors?.talla && (
-                            <p className="text-xs font-medium text-red-500">{rowErrors.talla}</p>
-                          )}
-                        </div>
-
-                        {!isEditMode && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => removeVariantRow(variant.key)}
-                            disabled={isSubmitting || variants.length === 1}
-                            title="Quitar variante"
-                            className="justify-center gap-2 text-red-600 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Quitar
-                          </Button>
-                        )}
                       </div>
-                    </div>
                     );
                   })}
                 </div>
