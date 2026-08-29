@@ -42,9 +42,15 @@ interface NestErrorPayload {
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const token = getToken();
+  const isFormData = options.body instanceof FormData;
 
   const headers = new Headers(options.headers);
-  headers.set('Content-Type', 'application/json');
+  // Con FormData el navegador debe fijar su propio Content-Type con el
+  // boundary del multipart (ej. "multipart/form-data; boundary=..."); si lo
+  // forzamos a "application/json" aquí, el backend no puede parsear el archivo.
+  if (!isFormData) {
+    headers.set('Content-Type', 'application/json');
+  }
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
@@ -54,7 +60,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     response = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
       headers,
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      body: options.body === undefined
+        ? undefined
+        : isFormData
+          ? (options.body as FormData)
+          : JSON.stringify(options.body),
     });
   } catch {
     throw new ApiError(0, 'No se pudo conectar con el servidor. Verifica tu conexión.');
@@ -80,6 +90,20 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   return payload as T;
+}
+
+export interface UploadImageResult {
+  url: string;
+  publicId: string;
+}
+
+// Sube un archivo de imagen a POST /uploads/image (protegido, requiere estar
+// logueado) y devuelve la URL final en Cloudinary — es lo que se guarda en
+// `imagenes` del producto.
+export function uploadImage(file: File): Promise<UploadImageResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request<UploadImageResult>('/uploads/image', { method: 'POST', body: formData });
 }
 
 export const apiClient = {

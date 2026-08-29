@@ -7,6 +7,7 @@ import { DataTable } from '@/components/shared/data-table';
 import { ProductForm } from '@/components/products/product-form';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +27,8 @@ export default function ProductsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  // Imagen mostrada en el modal de "vista ampliada" (null = cerrado)
+  const [previewImage, setPreviewImage] = useState<{ url: string; nombre: string } | null>(null);
 
   const fetchProducts = useCallback(async () => {
     setIsLoading(true);
@@ -87,12 +90,19 @@ export default function ProductsPage() {
         cell: ({ row }) => {
           const url = row.original.imagenes[0];
           return url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={url}
-              alt={row.original.nombre}
-              className="h-10 w-10 rounded-md border border-border object-cover"
-            />
+            <button
+              type="button"
+              onClick={() => setPreviewImage({ url, nombre: row.original.nombre })}
+              className="rounded-md transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+              title="Ver imagen ampliada"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={url}
+                alt={row.original.nombre}
+                className="h-10 w-10 cursor-zoom-in rounded-md border border-border object-cover"
+              />
+            </button>
           ) : (
             <div className="h-10 w-10 rounded-md border border-dashed border-border bg-muted" />
           );
@@ -101,6 +111,21 @@ export default function ProductsPage() {
       {
         accessorKey: 'nombre',
         header: 'Nombre del Producto',
+        cell: ({ row }) => (
+          <div>
+            <p>{row.original.nombre}</p>
+            {row.original.descripcion && (
+              // line-clamp-1 recorta a una sola línea con "…" — la descripción
+              // completa queda disponible en el título nativo (tooltip) al pasar el mouse.
+              <p
+                className="line-clamp-1 max-w-[220px] text-xs text-muted-foreground"
+                title={row.original.descripcion}
+              >
+                {row.original.descripcion}
+              </p>
+            )}
+          </div>
+        ),
       },
       {
         accessorKey: 'marca',
@@ -197,6 +222,24 @@ export default function ProductsPage() {
         initialData={editingProduct}
         onSuccess={fetchProducts}
       />
+
+      {/* Vista ampliada de la imagen del producto — modal chico, solo para
+          ver mejor la miniatura, no un visor de imagen completo. */}
+      <Dialog open={previewImage !== null} onOpenChange={(open) => !open && setPreviewImage(null)}>
+        <DialogContent className="max-w-sm p-4">
+          <DialogTitle className="text-sm font-semibold text-slate-900 dark:text-blue-200">
+            {previewImage?.nombre}
+          </DialogTitle>
+          {previewImage && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewImage.url}
+              alt={previewImage.nombre}
+              className="max-h-[60vh] w-full rounded-md object-contain"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

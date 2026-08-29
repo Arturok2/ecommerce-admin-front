@@ -110,7 +110,7 @@ export default function OrdersPage() {
           </p>
         </div>
 
-        <Button onClick={() => setIsCreateOpen(true)}>Generar Venta Ficticia</Button>
+        <Button onClick={() => setIsCreateOpen(true)}>Generar Venta</Button>
       </div>
 
       <DataTable

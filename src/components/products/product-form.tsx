@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { Loader2, Plus, Trash2, Upload, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { apiClient, ApiError } from '@/lib/api-client';
+import { apiClient, ApiError, uploadImage } from '@/lib/api-client';
 import type { Category } from '@/components/categories/types';
 import { GENERO_OPTIONS, type Genero, type Product } from './types';
 
@@ -82,6 +82,11 @@ interface VariantRowErrors {
   color?: string;
   talla?: string;
 }
+
+// Mismos límites que valida el backend (uploads.controller.ts) — se
+// replican aquí para dar el error al instante, sin esperar la subida.
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 function validateBaseForm(form: BaseFormState): BaseFormErrors {
   const errors: BaseFormErrors = {};
@@ -148,6 +153,8 @@ export function ProductForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [baseErrors, setBaseErrors] = useState<BaseFormErrors>({});
   const [variantErrors, setVariantErrors] = useState<Record<string, VariantRowErrors>>({});
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   const isEditMode = initialData !== null;
 
@@ -155,6 +162,7 @@ export function ProductForm({
     if (!open) return;
     setBaseErrors({});
     setVariantErrors({});
+    setImageError(null);
 
     if (initialData) {
       setForm({
@@ -205,6 +213,41 @@ export function ProductForm({
 
   const removeVariantRow = (key: string) => {
     setVariants((prev) => prev.filter((row) => row.key !== key));
+  };
+
+  const handleImageFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    // Permite volver a elegir el mismo archivo más adelante (si no se limpia
+    // el input, el navegador no vuelve a disparar onChange con el mismo file).
+    event.target.value = '';
+    if (!file) return;
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setImageError('Formato no soportado. Usa JPG, PNG, WEBP o GIF.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      setImageError('La imagen no puede pesar más de 5 MB.');
+      return;
+    }
+
+    setImageError(null);
+    setIsUploadingImage(true);
+
+    try {
+      const result = await uploadImage(file);
+      updateField('imagenUrl', result.url);
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'No se pudo subir la imagen';
+      setImageError(message);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    updateField('imagenUrl', '');
+    setImageError(null);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -437,16 +480,62 @@ export function ProductForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="imagenUrl" className={FIELD_LABEL_CLASS}>
-                    Imagen (URL, opcional)
-                  </Label>
-                  <Input
-                    id="imagenUrl"
-                    value={form.imagenUrl}
-                    onChange={(e) => updateField('imagenUrl', e.target.value)}
-                    placeholder="https://..."
-                    disabled={isSubmitting}
-                  />
+                  <Label className={FIELD_LABEL_CLASS}>Imagen del producto (opcional)</Label>
+
+                  {form.imagenUrl ? (
+                    // Ya hay una imagen (subida ahora o cargada de la edición):
+                    // vista previa + opción de quitarla para subir otra.
+                    <div className="flex items-center gap-3 rounded-md border border-border p-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={form.imagenUrl}
+                        alt="Vista previa del producto"
+                        className="h-14 w-14 rounded-md object-cover"
+                      />
+                      <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                        {form.imagenUrl}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleRemoveImage}
+                        disabled={isSubmitting || isUploadingImage}
+                        title="Quitar imagen"
+                      >
+                        <X className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <label
+                      className={`flex h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed text-xs transition-colors ${
+                        imageError
+                          ? 'border-red-500 text-red-500'
+                          : 'border-border text-muted-foreground hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-300'
+                      }`}
+                    >
+                      {isUploadingImage ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          Subiendo...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-5 w-5" />
+                          Haz clic para elegir una imagen
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                        onChange={handleImageFileChange}
+                        disabled={isSubmitting || isUploadingImage}
+                      />
+                    </label>
+                  )}
+                  {imageError && <p className="text-xs font-medium text-red-500">{imageError}</p>}
+                  <p className="text-xs text-muted-foreground">JPG, PNG, WEBP o GIF — máx. 5 MB.</p>
                 </div>
               </div>
             </div>
@@ -610,7 +699,7 @@ export function ProductForm({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || isUploadingImage}>
               {isSubmitting ? 'Guardando...' : 'Guardar'}
             </Button>
           </div>
